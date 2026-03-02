@@ -1,0 +1,418 @@
+[
+  {
+    "id": 1001,
+    "name": "Shoaib Akhtar",
+    "email": "shoaib@admin.com",
+    "password": "shoaib123@",
+    "role": "admin",
+    "contactNumber": "+91 90000 10001"
+  },
+  {
+    "id": 1002,
+    "name": "Animesh Gandhi",
+    "email": "animesh@admin.com",
+    "password": "animesh123@",
+    "role": "admin",
+    "contactNumber": "+91 90000 10002"
+  },
+  {
+    "id": 1003,
+    "name": "Souvik Hazra",
+    "email": "souvik@admin.com",
+    "password": "souvik123@",
+    "role": "admin",
+    "contactNumber": "+91 90000 10003"
+  },
+  {
+    "id": 1004,
+    "name": "Harsh Bhorde",
+    "email": "harsh@admin.com",
+    "password": "harsh123@",
+    "role": "admin",
+    "contactNumber": "+91 90000 10004"
+  },
+  {
+    "id": 2001,
+    "name": "Taj Mahal Palace Manager",
+    "email": "manager.tajmahal@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20001"
+  },
+  {
+    "id": 2002,
+    "name": "Ritz-Carlton Manager",
+    "email": "manager.ritzcarlon@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20002"
+  },
+  {
+    "id": 2003,
+    "name": "ITC Grand Central Manager",
+    "email": "manager.itcgrand@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20003"
+  },
+  {
+    "id": 2004,
+    "name": "St. Regis Manager",
+    "email": "manager.stregis@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20004"
+  },
+  {
+    "id": 2005,
+    "name": "Trident Nariman Manager",
+    "email": "manager.tridentnariman@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20005"
+  },
+  {
+    "id": 2006,
+    "name": "ITC Royal Bengal Manager",
+    "email": "manager.itcbengal@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20006"
+  },
+  {
+    "id": 2007,
+    "name": "Oberoi Grand Manager",
+    "email": "manager.oberoi@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20007"
+  },
+  {
+    "id": 2008,
+    "name": "Park Street Lifestyle Manager",
+    "email": "manager.parkstreet@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20008"
+  },
+  {
+    "id": 2009,
+    "name": "Park Kolkata Manager",
+    "email": "manager.parkkolkata@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20009"
+  },
+  {
+    "id": 2010,
+    "name": "Taj Bengal Manager",
+    "email": "manager.tajbengal@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20010"
+  },
+  {
+    "id": 2011,
+    "name": "Westin Kolkata Manager",
+    "email": "manager.westin@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20011"
+  },
+  {
+    "id": 2012,
+    "name": "Leela Palace Manager",
+    "email": "manager.leelapalace@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20012"
+  },
+  {
+    "id": 2013,
+    "name": "Marriot Whitefield Manager",
+    "email": "manager.marriotwhite@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20013"
+  },
+  {
+    "id": 2014,
+    "name": "Aloft Cessna Manager",
+    "email": "manager.aloft@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20014"
+  },
+  {
+    "id": 2015,
+    "name": "Sheraton Bangalore Manager",
+    "email": "manager.sheratonbg@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20015"
+  },
+  {
+    "id": 2016,
+    "name": "Vivanta Bangalore Manager",
+    "email": "manager.vivantabg@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20016"
+  },
+  {
+    "id": 2017,
+    "name": "Goa Beach Casita Manager",
+    "email": "manager.goacasita@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20017"
+  },
+  {
+    "id": 2018,
+    "name": "W Goa Manager",
+    "email": "manager.wgoa@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20018"
+  },
+  {
+    "id": 2019,
+    "name": "Taj Exotica Goa Manager",
+    "email": "manager.tajexotica@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20019"
+  },
+  {
+    "id": 2020,
+    "name": "Oberoi Beach Goa Manager",
+    "email": "manager.oberoisbeach@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20020"
+  },
+  {
+    "id": 2021,
+    "name": "Hyatt Regency Goa Manager",
+    "email": "manager.hyattgoa@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20021"
+  },
+  {
+    "id": 2022,
+    "name": "Pink City Inn Manager",
+    "email": "manager.pinkcity@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20022"
+  },
+  {
+    "id": 2023,
+    "name": "Rambagh Palace Manager",
+    "email": "manager.rambagh@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20023"
+  },
+  {
+    "id": 2024,
+    "name": "Taj Amar Palace Manager",
+    "email": "manager.tajamar@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20024"
+  },
+  {
+    "id": 2025,
+    "name": "ITC Rajputana Manager",
+    "email": "manager.itcrajputana@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20025"
+  },
+  {
+    "id": 2026,
+    "name": "Clarks Amer Manager",
+    "email": "manager.clarksamer@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20026"
+  },
+  {
+    "id": 2027,
+    "name": "Taj Lake Palace Manager",
+    "email": "manager.tajlake@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20027"
+  },
+  {
+    "id": 2028,
+    "name": "Lodhi Manager",
+    "email": "manager.lodhi@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20028"
+  },
+  {
+    "id": 2029,
+    "name": "Novotel Airport Manager",
+    "email": "manager.novotel@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20029"
+  },
+  {
+    "id": 2030,
+    "name": "Oberoi New Delhi Manager",
+    "email": "manager.oberoinewdelhi@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20030"
+  },
+  {
+    "id": 2031,
+    "name": "ITC Maurya Manager",
+    "email": "manager.itcmaurya@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20031"
+  },
+  {
+    "id": 2032,
+    "name": "Taj Chandigarh Manager",
+    "email": "manager.tajchandigarh@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20032"
+  },
+  {
+    "id": 2033,
+    "name": "Radisson Blu Manager",
+    "email": "manager.radissonblu@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20033"
+  },
+  {
+    "id": 2034,
+    "name": "Himalayan Lodge Manager",
+    "email": "manager.himalayan@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20034"
+  },
+  {
+    "id": 2035,
+    "name": "Taj Falaknuma Manager",
+    "email": "manager.tajfalaknuma@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20035"
+  },
+  {
+    "id": 2036,
+    "name": "Backwater Bliss Manager",
+    "email": "manager.backwaterbliss@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20036"
+  },
+  {
+    "id": 2037,
+    "name": "Vivanta Taj Manager",
+    "email": "manager.vivantaj@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20037"
+  },
+  {
+    "id": 2038,
+    "name": "Umaid Bhawan Manager",
+    "email": "manager.umaidbhawan@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20038"
+  },
+  {
+    "id": 2039,
+    "name": "Lemon Tree Premier Manager",
+    "email": "manager.lemontree@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20039"
+  },
+  {
+    "id": 2040,
+    "name": "Hyatt Centric Manager",
+    "email": "manager.hyattcentric@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20040"
+  },
+  {
+    "id": 2041,
+    "name": "Soneva Fushi Manager",
+    "email": "manager.sonevafushi@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20041"
+  },
+  {
+    "id": 2042,
+    "name": "DoubleTree Hilton Manager",
+    "email": "manager.doubletree@resort.com",
+    "password": "manager123@",
+    "role": "manager",
+    "contactNumber": "+91 80000 20042"
+  },
+  {
+    "id": 3001,
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "hashed_password_guest_1",
+    "role": "guest",
+    "contactNumber": "+91 70000 30001"
+  },
+  {
+    "id": 3002,
+    "name": "Sarah Connor",
+    "email": "sarah@example.com",
+    "password": "hashed_password_guest_2",
+    "role": "guest",
+    "contactNumber": "+91 70000 30002"
+  },
+  {
+    "id": 3003,
+    "name": "Amit Patel",
+    "email": "amit@example.com",
+    "password": "hashed_password_guest_3",
+    "role": "guest",
+    "contactNumber": "+91 70000 30003"
+  },
+  {
+    "id": 3004,
+    "name": "Sneha Kapoor",
+    "email": "sneha@example.com",
+    "password": "hashed_password_guest_4",
+    "role": "guest",
+    "contactNumber": "+91 70000 30004"
+  },
+  {
+    "id": 3005,
+    "name": "David Miller",
+    "email": "david@example.com",
+    "password": "hashed_password_guest_5",
+    "role": "guest",
+    "contactNumber": "+91 70000 30005"
+  },
+  {
+    "id": 3006,
+    "name": "Pooja Hegde",
+    "email": "pooja@example.com",
+    "password": "pooja123",
+    "role": "guest",
+    "contactNumber": "+91 70000 30006"
+  }
+]

@@ -1,0 +1,19 @@
+# Ignore node modules for both client and server
+client/node_modules/
+server/node_modules/
+
+# Ignore build outputs
+client/dist/
+
+# Logs
+*.log
+
+# Environment files
+client/.env
+server/.env
+
+# macOS junk
+.DS_Store
+
+# OneDrive
+Thumbs.db

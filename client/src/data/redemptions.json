@@ -1,0 +1,23 @@
+[
+  {
+    "RedemptionID": "RED-7701",
+    "UserID": 3001,
+    "BookingID": "BK-2026-1001",
+    "PointsUsed": 500,
+    "DiscountAmount": 500
+  },
+  {
+    "RedemptionID": "RED-7702",
+    "UserID": 3002,
+    "BookingID": "BK-2026-1002",
+    "PointsUsed": 1000,
+    "DiscountAmount": 1000
+  },
+  {
+    "RedemptionID": "RED-7703",
+    "UserID": 3001,
+    "BookingID": "BK-2026-1004",
+    "PointsUsed": 2000,
+    "DiscountAmount": 2000
+  }
+]

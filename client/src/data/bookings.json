@@ -1,0 +1,62 @@
+[
+  {
+    "BookingID": "BK-2026-1001",
+    "UserID": 3001,
+    "HotelID": "h1001",
+    "RoomID": "R-H1001-01",
+    "CheckInDate": "2026-02-10",
+    "CheckOutDate": "2026-02-12",
+    "Status": "Completed",
+    "PaymentID": "PAY-88001",
+    "TotalPrice": 30000,
+    "LoyaltyPointsEarned": 300
+  },
+  {
+    "BookingID": "BK-2026-1002",
+    "UserID": 3002,
+    "HotelID": "h1002",
+    "RoomID": "R-H1002-01",
+    "CheckInDate": "2026-03-05",
+    "CheckOutDate": "2026-03-08",
+    "Status": "Confirmed",
+    "PaymentID": "PAY-88002",
+    "TotalPrice": 45000,
+    "LoyaltyPointsEarned": 450
+  },
+  {
+    "BookingID": "BK-2026-1003",
+    "UserID": 3003,
+    "HotelID": "h1004",
+    "RoomID": "R-H1004-01",
+    "CheckInDate": "2026-01-15",
+    "CheckOutDate": "2026-01-16",
+    "Status": "Completed",
+    "PaymentID": "PAY-88003",
+    "TotalPrice": 12000,
+    "LoyaltyPointsEarned": 120
+  },
+  {
+    "BookingID": "BK-2026-1004",
+    "UserID": 3001,
+    "HotelID": "h1011",
+    "RoomID": "R-H1011-01",
+    "CheckInDate": "2026-04-20",
+    "CheckOutDate": "2026-04-25",
+    "Status": "Confirmed",
+    "PaymentID": "PAY-88004",
+    "TotalPrice": 75000,
+    "LoyaltyPointsEarned": 750
+  },
+  {
+    "BookingID": "BK-2026-1005",
+    "UserID": 3005,
+    "HotelID": "h1021",
+    "RoomID": "R-H1021-01",
+    "CheckInDate": "2026-02-14",
+    "CheckOutDate": "2026-02-16",
+    "Status": "Cancelled",
+    "PaymentID": "PAY-88005",
+    "TotalPrice": 35000,
+    "LoyaltyPointsEarned": 0
+  }
+]

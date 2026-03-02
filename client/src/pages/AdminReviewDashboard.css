@@ -1,0 +1,11 @@
+.review-item {
+  transition: background-color 0.3s ease;
+}
+
+.review-item:hover {
+  background-color: #f8f9fa;
+}
+
+.review-item:last-child {
+  border-bottom: none !important;
+}

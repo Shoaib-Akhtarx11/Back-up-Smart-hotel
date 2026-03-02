@@ -1,0 +1,527 @@
+[
+  {
+    "id": "R-h1001-01",
+    "hotelId": "h1001",
+    "type": "Club Sea View",
+    "price": 15000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500",
+    "features": ["Sea View", "Free WiFi", "Breakfast included", "Balcony"]
+  },
+  {
+    "id": "R-h1001-02",
+    "hotelId": "h1001",
+    "type": "Maharaja Suite",
+    "price": 95000,
+    "availability": false,
+    "image": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500",
+    "features": [
+      "Sea View",
+      "Pool",
+      "Spa",
+      "Gym",
+      "Breakfast included",
+      "Free WiFi"
+    ]
+  },
+  {
+    "id": "R-h1002-01",
+    "hotelId": "h1002",
+    "type": "Luxury King",
+    "price": 18000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=500",
+    "features": ["Gym", "Free WiFi", "Breakfast included", "City View"]
+  },
+  {
+    "id": "R-h1002-02",
+    "hotelId": "h1002",
+    "type": "Grand Suite",
+    "price": 42000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1595900925773-1b98c6664d45?w=500",
+    "features": ["Pool", "Spa", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1003-01",
+    "hotelId": "h1003",
+    "type": "Heritage Single",
+    "price": 8500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1564078369132-521e4e4af47f?w=500",
+    "features": ["Breakfast included", "Free WiFi", "Teak Wood Decor"]
+  },
+  {
+    "id": "R-h1003-02",
+    "hotelId": "h1003",
+    "type": "Vintage Double",
+    "price": 14000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=500",
+    "features": ["Spa", "Free WiFi", "Garden View"]
+  },
+  {
+    "id": "R-h1004-01",
+    "hotelId": "h1004",
+    "type": "Dormitory Bed",
+    "price": 500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1567521464027-f127ff144326?w=500",
+    "features": ["Free WiFi", "Gym", "Locker"]
+  },
+  {
+    "id": "R-h1004-02",
+    "hotelId": "h1004",
+    "type": "Private Cabin",
+    "price": 1200,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=500",
+    "features": ["Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1005-01",
+    "hotelId": "h1005",
+    "type": "Premier Room",
+    "price": 22000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=500",
+    "features": ["Gym", "Free WiFi", "Breakfast included", "Soundproof Windows"]
+  },
+  {
+    "id": "R-h1005-02",
+    "hotelId": "h1005",
+    "type": "Presidential Suite",
+    "price": 88000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1444080748397-f442aa95c3e5?w=500",
+    "features": [
+      "Pool",
+      "Spa",
+      "Gym",
+      "Sea View",
+      "Breakfast included",
+      "Free WiFi"
+    ]
+  },
+  {
+    "id": "R-h1006-01",
+    "hotelId": "h1006",
+    "type": "Business Studio",
+    "price": 11000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=500",
+    "features": ["Free WiFi", "Gym", "Ergonomic Chair"]
+  },
+  {
+    "id": "R-h1006-02",
+    "hotelId": "h1006",
+    "type": "Executive Suite",
+    "price": 25000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=500",
+    "features": ["Spa", "Pool", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1007-01",
+    "hotelId": "h1007",
+    "type": "Lake View Standard",
+    "price": 4500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1578683078519-cf60a4f45b12?w=500",
+    "features": ["Free WiFi", "Breakfast included", "Window Seat"]
+  },
+  {
+    "id": "R-h1007-02",
+    "hotelId": "h1007",
+    "type": "Eco Hut",
+    "price": 3200,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?w=500",
+    "features": ["Breakfast included", "Natural Ventilation"]
+  },
+  {
+    "id": "R-h1008-01",
+    "hotelId": "h1008",
+    "type": "Garden View Room",
+    "price": 19500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500",
+    "features": ["Pool", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1008-02",
+    "hotelId": "h1008",
+    "type": "Royal Suite",
+    "price": 55000,
+    "availability": false,
+    "image": "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=500",
+    "features": ["Spa", "Pool", "Gym", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1009-01",
+    "hotelId": "h1009",
+    "type": "Pool Side Villa",
+    "price": 28000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=500",
+    "features": ["Pool", "Sea View", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1009-02",
+    "hotelId": "h1009",
+    "type": "Beach Shack Luxury",
+    "price": 12000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",
+    "features": ["Sea View", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1010-01",
+    "hotelId": "h1010",
+    "type": "Standard Non-AC",
+    "price": 1500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1522701891917-51fb3ee990af?w=500",
+    "features": ["Free WiFi", "Double Bed"]
+  },
+  {
+    "id": "R-h1010-02",
+    "hotelId": "h1010",
+    "type": "Deluxe AC",
+    "price": 3500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=500",
+    "features": ["Free WiFi", "Breakfast included", "City View"]
+  },
+  {
+    "id": "R-h1011-01",
+    "hotelId": "h1011",
+    "type": "Floating Suite",
+    "price": 100000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1551524164-0b41c4a43667?w=500",
+    "features": ["Pool", "Sea View", "Spa", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1011-02",
+    "hotelId": "h1011",
+    "type": "Palace Chamber",
+    "price": 65000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=500",
+    "features": ["Spa", "Gym", "Breakfast included", "Free WiFi"]
+  },
+  {
+    "id": "R-h1012-01",
+    "hotelId": "h1012",
+    "type": "IT Hub Suite",
+    "price": 9500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1590080876-1995ecf25255?w=500",
+    "features": ["Free WiFi", "Gym", "High Speed LAN"]
+  },
+  {
+    "id": "R-h1013-01",
+    "hotelId": "h1013",
+    "type": "Lutyens Suite",
+    "price": 40000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=500",
+    "features": ["Pool", "Gym", "Breakfast included", "Free WiFi"]
+  },
+  {
+    "id": "R-h1014-01",
+    "hotelId": "h1014",
+    "type": "Transit Room",
+    "price": 5500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1591085686350-440dd88c79f0?w=500",
+    "features": ["Gym", "Free WiFi", "Soundproof"]
+  },
+  {
+    "id": "R-h1015-01",
+    "hotelId": "h1015",
+    "type": "Snow View Attic",
+    "price": 7800,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500",
+    "features": ["Free WiFi", "Breakfast included", "Skylight"]
+  },
+  {
+    "id": "R-h1016-01",
+    "hotelId": "h1016",
+    "type": "Nizam Suite",
+    "price": 75000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1570129477492-45b003493af0?w=500",
+    "features": ["Spa", "Gym", "Pool", "Breakfast included", "Free WiFi"]
+  },
+  {
+    "id": "R-h1017-01",
+    "hotelId": "h1017",
+    "type": "Canal View Cottage",
+    "price": 11000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1562438668536-16efee4d9e2f?w=500",
+    "features": ["Pool", "Breakfast included", "Free WiFi"]
+  },
+  {
+    "id": "R-h1018-01",
+    "hotelId": "h1018",
+    "type": "Marine Premier",
+    "price": 28000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1551882547-ff43c63fedfe?w=500",
+    "features": ["Sea View", "Gym", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1019-01",
+    "hotelId": "h1019",
+    "type": "Assam Teak Room",
+    "price": 6500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500",
+    "features": ["Free WiFi", "Breakfast included", "Hill View"]
+  },
+  {
+    "id": "R-h1020-01",
+    "hotelId": "h1020",
+    "type": "Airport Studio",
+    "price": 8000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1569635116180-210c35b387dd?w=500",
+    "features": ["Gym", "Free WiFi", "Blackout Curtains"]
+  },
+  {
+    "id": "R-h1021-01",
+    "hotelId": "h1021",
+    "type": "Designer Room",
+    "price": 13000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1570129477492-45b003493af0?w=500",
+    "features": ["Free WiFi", "Breakfast included", "Mood Lighting"]
+  },
+  {
+    "id": "R-h1022-01",
+    "hotelId": "h1022",
+    "type": "Royal Tent",
+    "price": 35000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500",
+    "features": ["Pool", "Spa", "Breakfast included", "Free WiFi"]
+  },
+  {
+    "id": "R-h1023-01",
+    "hotelId": "h1023",
+    "type": "Cliff Villa",
+    "price": 48000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500",
+    "features": ["Pool", "Sea View", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1024-01",
+    "hotelId": "h1024",
+    "type": "Smart Double",
+    "price": 4200,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1533900298318-6b8da08a523e?w=500",
+    "features": ["Free WiFi", "Voice Control"]
+  },
+  {
+    "id": "R-h1025-01",
+    "hotelId": "h1025",
+    "type": "Mountain Suite",
+    "price": 15500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500",
+    "features": ["Gym", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1026-01",
+    "hotelId": "h1026",
+    "type": "Island Villa",
+    "price": 60000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500",
+    "features": ["Pool", "Sea View", "Spa", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1027-01",
+    "hotelId": "h1027",
+    "type": "Tech Single",
+    "price": 3500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=500",
+    "features": ["Free WiFi", "USB Ports"]
+  },
+  {
+    "id": "R-h1028-01",
+    "hotelId": "h1028",
+    "type": "Peacock Suite",
+    "price": 92000,
+    "availability": false,
+    "image": "https://images.unsplash.com/photo-1551107696-bc38066a6429?w=500",
+    "features": [
+      "Pool",
+      "Spa",
+      "Gym",
+      "Sea View",
+      "Breakfast included",
+      "Free WiFi"
+    ]
+  },
+  {
+    "id": "R-h1029-01",
+    "hotelId": "h1029",
+    "type": "Skyline Room",
+    "price": 14000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=500",
+    "features": ["Gym", "Free WiFi", "Breakfast included"]
+  },
+  {
+    "id": "R-h1030-01",
+    "hotelId": "h1030",
+    "type": "Ahmedabad Business",
+    "price": 6800,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=500",
+    "features": ["Free WiFi", "Breakfast included", "Large Desk"]
+  },
+  {
+    "id": "R-h1031-01",
+    "hotelId": "h1031",
+    "type": "Club City King",
+    "price": 24000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=500",
+    "features": ["Butler Service", "Free WiFi", "Spa Access", "Skyline View"]
+  },
+  {
+    "id": "R-h1032-01",
+    "hotelId": "h1032",
+    "type": "Executive Club Room",
+    "price": 12500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=500",
+    "features": ["Breakfast included", "Free WiFi", "Cocktail Hour Access"]
+  },
+  {
+    "id": "R-h1033-01",
+    "hotelId": "h1033",
+    "type": "Caroline Astor Suite",
+    "price": 45000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=500",
+    "features": ["Personal Butler", "Sea View", "Deep Soaking Tub"]
+  },
+  {
+    "id": "R-h1034-01",
+    "hotelId": "h1034",
+    "type": "Luxury Heritage Room",
+    "price": 16000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=500",
+    "features": ["Garden View", "Breakfast included", "Classic Decor"]
+  },
+  {
+    "id": "R-h1035-01",
+    "hotelId": "h1035",
+    "type": "Deluxe Business King",
+    "price": 10500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=500",
+    "features": ["Ergonomic Desk", "Gym Access", "High Speed WiFi"]
+  },
+  {
+    "id": "R-h1036-01",
+    "hotelId": "h1036",
+    "type": "Premium City View",
+    "price": 13000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=500",
+    "features": ["Modern Interior", "Breakfast included", "Pool View"]
+  },
+  {
+    "id": "R-h1037-01",
+    "hotelId": "h1037",
+    "type": "Luxury Garden Villa",
+    "price": 32000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=500",
+    "features": ["Private Patio", "Beach Access", "Outdoor Shower"]
+  },
+  {
+    "id": "R-h1038-01",
+    "hotelId": "h1038",
+    "type": "Ocean Front Suite",
+    "price": 55000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=500",
+    "features": ["Sunset View", "Private Plunge Pool", "Spa Credit"]
+  },
+  {
+    "id": "R-h1039-01",
+    "hotelId": "h1039",
+    "type": "Lagoon View Room",
+    "price": 9800,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=500",
+    "features": ["Balcony", "Free WiFi", "Water Sports Access"]
+  },
+  {
+    "id": "R-h1040-01",
+    "hotelId": "h1040",
+    "type": "Palace Luxury Room",
+    "price": 21000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1592312040834-bb0d621713e1?w=500",
+    "features": ["Heritage Walk Included", "Traditional Decor", "Pool View"]
+  },
+  {
+    "id": "R-h1041-01",
+    "hotelId": "h1041",
+    "type": "Rajputana Chamber",
+    "price": 14500,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1571508601891-ca5e7a713859?w=500",
+    "features": ["City View", "Free WiFi", "Folk Performance Access"]
+  },
+  {
+    "id": "R-h1042-01",
+    "hotelId": "h1042",
+    "type": "Standard Business",
+    "price": 7200,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=500",
+    "features": ["Breakfast included", "Airport Shuttle", "Gym Access"]
+  },
+  {
+    "id": "R-h1043-01",
+    "hotelId": "h1043",
+    "type": "Garden View Premier",
+    "price": 28000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1560662105-57f8ad6ae2d1?w=500",
+    "features": ["Spa Access", "Free WiFi", "Personalized Butler"]
+  },
+  {
+    "id": "R-h1044-01",
+    "hotelId": "h1044",
+    "type": "Executive Club Suite",
+    "price": 22000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1551882547-ff43c63fedfe?w=500",
+    "features": ["Lounge Access", "Breakfast included", "High Security Wing"]
+  },
+  {
+    "id": "R-h1045-01",
+    "hotelId": "h1045",
+    "type": "Superior City Room",
+    "price": 11000,
+    "availability": true,
+    "image": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500",
+    "features": ["Central Location", "Free WiFi", "Modern Design"]
+  }
+]

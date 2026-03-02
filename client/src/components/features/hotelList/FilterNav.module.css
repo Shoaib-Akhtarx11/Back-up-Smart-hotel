@@ -1,0 +1,99 @@
+.filterNavbar {
+  background: white;
+  padding: 15px 0;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.filterItem {
+  position: relative;
+}
+
+.filterBtn {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterBtn:hover {
+  border-color: #007bff;
+  background: #f0f7ff;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  background: white;
+  min-width: 250px;
+  border-radius: 14px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+  border: 1px solid #efefef;
+  padding: 15px 0;
+  z-index: 2000;
+  animation: slideIn 0.2s ease-out;
+}
+
+.opt {
+  padding: 10px 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.opt:hover {
+  background: #f8f9fa;
+  color: #007bff;
+}
+
+/* Double Slider CSS */
+.rangeSliderWrapper {
+  position: relative;
+  height: 5px;
+  margin: 25px 20px;
+  background: #ddd;
+  border-radius: 5px;
+}
+
+.sliderTrack {
+  position: absolute;
+  height: 100%;
+  background: #007bff;
+  border-radius: 5px;
+}
+
+.rangeInput {
+  position: absolute;
+  width: 100%;
+  background: none;
+  pointer-events: none;
+  -webkit-appearance: none;
+  top: -7px;
+}
+
+.rangeInput::-webkit-slider-thumb {
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #007bff;
+  pointer-events: auto;
+  -webkit-appearance: none;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

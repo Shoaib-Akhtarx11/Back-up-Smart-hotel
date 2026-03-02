@@ -1,0 +1,42 @@
+[
+  {
+    "PaymentID": "PAY-88001",
+    "UserID": 3001,
+    "BookingID": "BK-2026-1001",
+    "Amount": 30000,
+    "Status": "Success",
+    "PaymentMethod": "Credit Card"
+  },
+  {
+    "PaymentID": "PAY-88002",
+    "UserID": 3002,
+    "BookingID": "BK-2026-1002",
+    "Amount": 54000,
+    "Status": "Success",
+    "PaymentMethod": "UPI"
+  },
+  {
+    "PaymentID": "PAY-88003",
+    "UserID": 3003,
+    "BookingID": "BK-2026-1003",
+    "Amount": 500,
+    "Status": "Success",
+    "PaymentMethod": "Debit Card"
+  },
+  {
+    "PaymentID": "PAY-88004",
+    "UserID": 3001,
+    "BookingID": "BK-2026-1004",
+    "Amount": 500000,
+    "Status": "Success",
+    "PaymentMethod": "Net Banking"
+  },
+  {
+    "PaymentID": "PAY-88005",
+    "UserID": 3005,
+    "BookingID": "BK-2026-1005",
+    "Amount": 26000,
+    "Status": "Refunded",
+    "PaymentMethod": "UPI"
+  }
+]
