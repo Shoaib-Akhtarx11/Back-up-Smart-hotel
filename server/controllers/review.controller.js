@@ -95,7 +95,7 @@ export const updateReview = async (req, res) => {
     if (!review) {
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
-    if (review.UserID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (review.UserID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -131,7 +131,7 @@ export const deleteReview = async (req, res) => {
     if (!review) {
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
-    if (review.UserID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (review.UserID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 

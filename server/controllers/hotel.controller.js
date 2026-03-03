@@ -5,7 +5,7 @@ import Hotel from '../models/hotel.model.js';
 // @access  Private (manager/admin)
 export const createHotel = async (req, res) => {
   try {
-    const { Name, Location, Amenities } = req.body;
+    const { Name, Location, Amenities, Image } = req.body;
 
     if (!Name || !Location) {
       return res.status(400).json({ success: false, message: 'Name and Location are required' });
@@ -15,6 +15,7 @@ export const createHotel = async (req, res) => {
       Name,
       Location,
       Amenities: Amenities || [],
+      Image: Image || '',
       ManagerID: req.user.id,
     });
 
@@ -65,15 +66,16 @@ export const updateHotel = async (req, res) => {
     }
 
     // Only manager who owns hotel or admin can update
-    if (hotel.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (hotel.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    const { Name, Location, Amenities, Rating } = req.body;
+    const { Name, Location, Amenities, Rating, Image } = req.body;
     if (Name) hotel.Name = Name;
     if (Location) hotel.Location = Location;
     if (Amenities) hotel.Amenities = Amenities;
     if (Rating !== undefined) hotel.Rating = Rating;
+    if (Image) hotel.Image = Image;
 
     await hotel.save();
 
@@ -94,7 +96,7 @@ export const deleteHotel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
 
-    if (hotel.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (hotel.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 

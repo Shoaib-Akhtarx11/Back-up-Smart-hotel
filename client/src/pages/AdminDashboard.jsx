@@ -2,18 +2,24 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { logout } from "../redux/authSlice";
-// import { deleteHotel } from "../redux/hotelSlice";
-import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
 import UserManagementTable from "../components/features/dashboard/UserManagementTable";
 import HotelTable from "../components/features/dashboard/HotelTable";
 import { FaUsers, FaUserTie, FaHotel, FaDatabase, FaStar, FaSignOutAlt, FaHome } from "react-icons/fa";
+import { useEffect } from "react";
+import { fetchAllUsers, selectAllUsers } from '../redux/userSlice';
+import { fetchHotels } from '../redux/hotelSlice';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("customers");
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  
+  useEffect(()=>{
+    dispatch(fetchAllUsers());
+    dispatch(fetchHotels());
+  },[dispatch])
 
   // Safe Selectors
   const reduxHotels = useSelector((state) => state.hotels?.allHotels || []);
@@ -29,22 +35,22 @@ const AdminDashboard = () => {
   let customers = [];
   let managers = [];
   let filteredData = [];
-
+// console.log(allUsers)
   try {
     // Filter logic with safety guards
-    managers = allUsers.filter((user) => user?.role === "manager");
-    customers = allUsers.filter((user) => user?.role === "guest" || user?.role === "user" || !user?.role);
+    managers = allUsers.filter((user) => user?.Role === "manager");
+    customers = allUsers.filter((user) => user?.Role === "guest" || user?.role === "user" || !user?.role);
     
     // Apply search filter based on active tab
     if (activeTab === "customers") {
       filteredData = customers.filter(user => 
-        user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        user?.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user?.Email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else if (activeTab === "managers") {
       filteredData = managers.filter(user => 
-        user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+        user?.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user?.Email?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     } else if (activeTab === "hotels") {
       filteredData = allHotels.filter(hotel => 

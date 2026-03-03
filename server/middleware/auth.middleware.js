@@ -1,13 +1,17 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/user.model.js';
 
-// Protect routes - verify JWT token
+// Protect routes - verify JWT token (from cookie or header)
 export const protect = async (req, res, next) => {
   try {
     let token;
 
-    // Get token from header
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Get token from cookie first
+    if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+    // Fallback to Authorization header
+    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
@@ -18,9 +22,13 @@ export const protect = async (req, res, next) => {
 
     try {
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_jwt_secret_key');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smart_hotel_booking_system');
 
-      req.user = decoded;
+      // The JWT contains 'role' (lowercase) from auth.controller.js
+      req.user = {
+        id: decoded.id,
+        role: decoded.role
+      };
       next();
     } catch (err) {
       return res.status(401).json({ success: false, message: 'Token is not valid' });

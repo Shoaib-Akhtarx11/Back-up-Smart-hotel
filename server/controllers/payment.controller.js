@@ -17,7 +17,7 @@ export const createPayment = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (booking.UserID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (booking.UserID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -69,7 +69,7 @@ export const createPayment = async (req, res) => {
 export const getPayments = async (req, res) => {
   try {
     let filter = {};
-    if (req.user.Role !== 'admin') {
+    if (req.user.role !== 'admin') {
       filter.UserID = req.user.id;
     }
     const payments = await Payment.find(filter)
@@ -95,7 +95,7 @@ export const getPayment = async (req, res) => {
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
-    if (req.user.Role !== 'admin' && payment.UserID._id.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && payment.UserID._id.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -115,7 +115,7 @@ export const refundPayment = async (req, res) => {
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
-    if (req.user.Role !== 'admin' && payment.UserID.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && payment.UserID.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 

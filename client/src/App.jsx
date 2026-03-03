@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 // Page Imports
 import Home from "./pages/Home";
@@ -41,16 +42,57 @@ const App = () => {
         <Route path="/booking/:hotelId/:roomId" element={<BookingPage />} />
 
         {/* --- User Account & Loyalty --- */}
-        <Route path="/account" element={<UserAccount />} />
-        <Route path="/loyalty" element={<LoyaltyPage />} />
-        <Route path="/recentvisit" element={<RecentVisit />} />
+        <Route path="/account" element={
+          <ProtectedRoute allowedRoles={['guest', 'manager', 'admin']}>
+            <UserAccount />
+          </ProtectedRoute>
+        } />
+        <Route path="/loyalty" element={
+          <ProtectedRoute allowedRoles={['guest', 'manager', 'admin']}>
+            <LoyaltyPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/recentvisit" element={
+          <ProtectedRoute allowedRoles={['guest', 'manager', 'admin']}>
+            <RecentVisit />
+          </ProtectedRoute>
+        } />
 
         {/* --- Dashboards (Role-Based) --- */}
-        <Route path="/manager" element={<ManagerDashboard />} />
-        <Route path="/add-hotel" element={<AddHotel />} />
-        <Route path="/reviews" element={<ReviewManagement />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/reviews" element={<AdminReviewDashboard />} />
+        {/* Manager Dashboard - Only managers and admins can access */}
+        <Route path="/manager" element={
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
+            <ManagerDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Add Hotel - Only managers and admins can access */}
+        <Route path="/add-hotel" element={
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
+            <AddHotel />
+          </ProtectedRoute>
+        } />
+        
+        {/* Review Management - Only managers and admins can access */}
+        <Route path="/reviews" element={
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
+            <ReviewManagement />
+          </ProtectedRoute>
+        } />
+        
+        {/* Admin Dashboard - Only admins can access */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        
+        {/* Admin Review Dashboard - Only admins can access */}
+        <Route path="/admin/reviews" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminReviewDashboard />
+          </ProtectedRoute>
+        } />
 
         {/* --- Authentication Routes --- */}
         <Route

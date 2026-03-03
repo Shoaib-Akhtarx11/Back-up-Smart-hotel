@@ -67,7 +67,7 @@ export const createBooking = async (req, res) => {
 export const getBookings = async (req, res) => {
   try {
     let filter = {};
-    if (req.user.Role !== 'admin') {
+    if (req.user.role !== 'admin') {
       filter.UserID = req.user.id;
     }
     const bookings = await Booking.find(filter)
@@ -94,7 +94,7 @@ export const getBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (req.user.Role !== 'admin' && booking.UserID._id.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && booking.UserID._id.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
     return res.status(200).json({ success: true, data: booking });
@@ -113,7 +113,7 @@ export const updateBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (req.user.Role !== 'admin' && booking.UserID.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && booking.UserID.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -139,7 +139,7 @@ export const deleteBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (req.user.Role !== 'admin' && booking.UserID.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && booking.UserID.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 

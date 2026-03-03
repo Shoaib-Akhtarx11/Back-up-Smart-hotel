@@ -105,18 +105,19 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
       const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ Email: email, Password: password }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        const { user, token } = data;
+        const { user } = data;
 
-        dispatch(login({ user, token }));
+        dispatch(login({ user }));
 
         if (onSuccess) onSuccess();
-        console.log(user)
+        
         if (redirectTo) {
           navigate(redirectTo);
         } else if (user.Role === "admin") {
@@ -191,3 +192,4 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
 };
 
 export default Login;
+

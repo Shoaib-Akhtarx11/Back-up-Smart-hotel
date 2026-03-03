@@ -1,9 +1,11 @@
-import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
-export const fetchHotelReviews = createAsyncThunk('reviews/fetchHotelReviews', async (hotelId) => {
-  const res = await fetch(`${API_BASE}/api/reviews?HotelID=${hotelId}`);
+export const fetchReviews = createAsyncThunk('reviews/fetchReviews', async () => {
+  const res = await fetch(`${API_BASE}/api/reviews`, {
+    credentials: 'include'
+  });
   const data = await res.json();
   if (!data.success) {
     throw new Error(data.message || 'Failed to fetch reviews');
@@ -11,45 +13,24 @@ export const fetchHotelReviews = createAsyncThunk('reviews/fetchHotelReviews', a
   return data.data;
 });
 
-export const submitReview = createAsyncThunk('reviews/submitReview', async (reviewData) => {
-  const token = localStorage.getItem('token');
+export const createReview = createAsyncThunk('reviews/createReview', async (reviewData) => {
   const res = await fetch(`${API_BASE}/api/reviews`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reviewData)
   });
   const data = await res.json();
   if (!data.success) {
-    throw new Error(data.message || 'Failed to submit review');
-  }
-  return data.data;
-});
-
-export const updateReview = createAsyncThunk('reviews/updateReview', async ({ reviewId, updates }) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_BASE}/api/reviews/${reviewId}`, {
-    method: 'PUT',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify(updates)
-  });
-  const data = await res.json();
-  if (!data.success) {
-    throw new Error(data.message || 'Failed to update review');
+    throw new Error(data.message || 'Failed to create review');
   }
   return data.data;
 });
 
 export const deleteReview = createAsyncThunk('reviews/deleteReview', async (reviewId) => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/reviews/${reviewId}`, {
     method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` }
+    credentials: 'include'
   });
   const data = await res.json();
   if (!data.success) {
@@ -61,59 +42,47 @@ export const deleteReview = createAsyncThunk('reviews/deleteReview', async (revi
 const reviewSlice = createSlice({
   name: 'reviews',
   initialState: {
-    allReviews: [],
-    hotelReviews: {},
+    reviews: [],
     loading: false,
     error: null
   },
-  reducers: {},
+  reducers: {
+    clearReviewError: (state) => {
+      state.error = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchHotelReviews.pending, (state) => {
+      .addCase(fetchReviews.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchHotelReviews.fulfilled, (state, action) => {
+      .addCase(fetchReviews.fulfilled, (state, action) => {
         state.loading = false;
-        state.allReviews = action.payload;
+        state.reviews = action.payload;
       })
-      .addCase(fetchHotelReviews.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message;
-      })
-      .addCase(submitReview.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(submitReview.fulfilled, (state, action) => {
-        state.loading = false;
-        state.allReviews.push(action.payload);
-      })
-      .addCase(submitReview.rejected, (state, action) => {
+      .addCase(fetchReviews.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
+      })
+      .addCase(createReview.fulfilled, (state, action) => {
+        state.reviews.push(action.payload);
       })
       .addCase(deleteReview.fulfilled, (state, action) => {
-        state.allReviews = state.allReviews.filter(r => r._id !== action.payload);
+        state.reviews = state.reviews.filter(r => r._id !== action.payload);
       });
   }
 });
 
-export const selectAllReviews = (state) => state.reviews?.allReviews || [];
+export const { clearReviewError } = reviewSlice.actions;
 
-export const selectApprovedReviews = createSelector(
-  [selectAllReviews],
-  (reviews) => reviews.filter(r => !r.isDeleted)
-);
-
-export const selectHotelReviews = (hotelId) =>
-  createSelector([selectAllReviews], (reviews) =>
-    reviews.filter(r => String(r.HotelID) === String(hotelId))
+// Selector to get reviews for a specific hotel
+export const selectHotelReviews = (hotelId) => (state) => 
+  (state.reviews?.reviews || []).filter(
+    review => String(review.HotelID) === String(hotelId) || 
+              String(review.hotelId) === String(hotelId)
   );
 
-export const selectUserReviews = (userId) =>
-  createSelector([selectAllReviews], (reviews) =>
-    reviews.filter(r => String(r.UserID) === String(userId))
-  );
-
+// Base selector
+export const selectAllReviews = (state) => state.reviews?.reviews || [];
 export default reviewSlice.reducer;

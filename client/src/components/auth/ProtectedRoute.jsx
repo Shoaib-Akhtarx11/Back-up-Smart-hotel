@@ -3,8 +3,11 @@ import { useSelector } from "react-redux";
 import { Navigate, useLocation } from "react-router-dom";
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const { isAuthenticated, role, loading } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
   const location = useLocation();
+  
+  // Get role from user object (capital R)
+  const role = user?.Role || user?.role || 'guest';
 
   try {
     // 1. Show nothing (or a spinner) while checking auth status

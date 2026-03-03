@@ -2,31 +2,27 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
-export const fetchUserLoyalty = createAsyncThunk('loyalty/fetchUserLoyalty', async (userId) => {
-  const token = localStorage.getItem('token');
-  const res = await fetch(`${API_BASE}/api/loyalty/${userId}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
+export const fetchUserLoyalty = createAsyncThunk('loyalty/fetchUserLoyalty', async () => {
+  const res = await fetch(`${API_BASE}/api/loyalty`, {
+    credentials: 'include'
   });
   const data = await res.json();
   if (!data.success) {
-    throw new Error(data.message || 'Failed to fetch loyalty account');
+    throw new Error(data.message || 'Failed to fetch loyalty data');
   }
   return data.data;
 });
 
-export const addLoyaltyPoints = createAsyncThunk('loyalty/addPoints', async ({ userId, points }) => {
-  const token = localStorage.getItem('token');
+export const addLoyaltyPoints = createAsyncThunk('loyalty/addLoyaltyPoints', async (pointsData) => {
   const res = await fetch(`${API_BASE}/api/loyalty/add-points`, {
     method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ UserID: userId, Points: points })
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(pointsData)
   });
   const data = await res.json();
   if (!data.success) {
-    throw new Error(data.message || 'Failed to add loyalty points');
+    throw new Error(data.message || 'Failed to add points');
   }
   return data.data;
 });
@@ -34,12 +30,15 @@ export const addLoyaltyPoints = createAsyncThunk('loyalty/addPoints', async ({ u
 const loyaltySlice = createSlice({
   name: 'loyalty',
   initialState: {
-    account: null,
-    pointsBalance: 0,
+    userLoyalty: null,
     loading: false,
     error: null
   },
-  reducers: {},
+  reducers: {
+    clearLoyaltyError: (state) => {
+      state.error = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchUserLoyalty.pending, (state) => {
@@ -48,18 +47,17 @@ const loyaltySlice = createSlice({
       })
       .addCase(fetchUserLoyalty.fulfilled, (state, action) => {
         state.loading = false;
-        state.account = action.payload;
-        state.pointsBalance = action.payload.PointsBalance;
+        state.userLoyalty = action.payload;
       })
       .addCase(fetchUserLoyalty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
       .addCase(addLoyaltyPoints.fulfilled, (state, action) => {
-        state.account = action.payload;
-        state.pointsBalance = action.payload.PointsBalance;
+        state.userLoyalty = action.payload;
       });
   }
 });
 
+export const { clearLoyaltyError } = loyaltySlice.actions;
 export default loyaltySlice.reducer;

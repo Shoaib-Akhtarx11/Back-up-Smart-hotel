@@ -56,7 +56,7 @@ export const createRedemption = async (req, res) => {
 export const getRedemptions = async (req, res) => {
   try {
     let filter = {};
-    if (req.user.Role !== 'admin') {
+    if (req.user.role !== 'admin') {
       filter.UserID = req.user.id;
     }
     const redemptions = await Redemption.find(filter)
@@ -83,7 +83,7 @@ export const getRedemption = async (req, res) => {
     if (!redemption) {
       return res.status(404).json({ success: false, message: 'Redemption not found' });
     }
-    if (req.user.Role !== 'admin' && redemption.UserID._id.toString() !== req.user.id) {
+    if (req.user.role !== 'admin' && redemption.UserID._id.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
@@ -99,7 +99,7 @@ export const getRedemption = async (req, res) => {
 // @access  Private (admin)
 export const deleteRedemption = async (req, res) => {
   try {
-    if (req.user.Role !== 'admin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 

@@ -1,21 +1,29 @@
 import express from 'express';
 import { 
   register, 
-  login, 
-  getMe, 
+  login,
+  logout,
+  getAllUsers,
   updateProfile, 
-  changePassword 
+  changePassword,
+  getMe
 } from '../controllers/auth.controller.js';
-import { protect } from '../middleware/auth.middleware.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/logout', logout);
 
-// Protected routes
+// Protected routes - Get current user
 router.get('/me', protect, getMe);
+
+// Protected routes - Admin only
+router.get('/users', protect, authorize('admin'), getAllUsers);
+
+// Protected routes - All authenticated users
 router.put('/update-profile', protect, updateProfile);
 router.put('/change-password', protect, changePassword);
 

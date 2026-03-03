@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 // Generate JWT Token
 const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'your_jwt_secret_key', {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET || 'smart_hotel_booking_system', {
     expiresIn: process.env.JWT_EXPIRE || '7d',
   });
 };
@@ -102,13 +102,20 @@ export const login = async (req, res) => {
 
     const token = generateToken(user._id, user.Role);
 
+    // Send token as HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     const userResponse = user.toObject();
     delete userResponse.Password;
 
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      token,
       user: userResponse,
     });
   } catch (error) {
@@ -117,23 +124,54 @@ export const login = async (req, res) => {
   }
 };
 
-// @desc    Get current logged in user
+// @desc    Logout User
+// @route   POST /api/auth/logout
+// @access  Public
+export const logout = async (req, res) => {
+  res.cookie('token', '', {
+    httpOnly: true,
+    expires: new Date(0)
+  });
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Logged out successfully'
+  });
+};
+
+// @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
 export const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-
+    const user = await User.findById(req.user.id).select('-Password');
+    
     if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
     }
 
     return res.status(200).json({
       success: true,
-      user,
+      data: user
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('Get me error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Get all users (admin only)
+// @route   GET /api/auth/users
+// @access  Private (admin)
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select('-Password');
+    return res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    console.error('Get all users error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

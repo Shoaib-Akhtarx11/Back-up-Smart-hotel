@@ -28,6 +28,10 @@ const HotelSchema = new mongoose.Schema(
       max: [5, 'Rating cannot exceed 5'],
       default: 0,
     },
+    Image: {
+      type: String,
+      default: '',
+    },
   },
   { timestamps: true }
 );

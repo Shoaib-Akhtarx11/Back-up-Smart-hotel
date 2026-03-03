@@ -3,9 +3,11 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 export const fetchUserBookings = createAsyncThunk('bookings/fetchUserBookings', async () => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/bookings`, {
-    headers: { 'Authorization': `Bearer ${token}` }
+    credentials: 'include',
+    headers: { 
+      'Content-Type': 'application/json'
+    }
   });
   const data = await res.json();
   if (!data.success) {
@@ -15,12 +17,11 @@ export const fetchUserBookings = createAsyncThunk('bookings/fetchUserBookings', 
 });
 
 export const createBooking = createAsyncThunk('bookings/createBooking', async (bookingData) => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/bookings`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(bookingData)
   });
@@ -32,16 +33,32 @@ export const createBooking = createAsyncThunk('bookings/createBooking', async (b
 });
 
 export const cancelBooking = createAsyncThunk('bookings/cancelBooking', async (bookingId) => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/bookings/${bookingId}`, {
     method: 'DELETE',
-    headers: { 'Authorization': `Bearer ${token}` }
+    credentials: 'include'
   });
   const data = await res.json();
   if (!data.success) {
     throw new Error(data.message || 'Failed to cancel booking');
   }
   return bookingId;
+});
+
+// Admin: Update booking status (approve/reject)
+export const updateBookingStatus = createAsyncThunk('bookings/updateBookingStatus', async ({ bookingId, status }) => {
+  const res = await fetch(`${API_BASE}/api/bookings/${bookingId}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ Status: status })
+  });
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.message || 'Failed to update booking status');
+  }
+  return data.data;
 });
 
 const bookingSlice = createSlice({
@@ -84,6 +101,18 @@ const bookingSlice = createSlice({
       .addCase(cancelBooking.fulfilled, (state, action) => {
         state.userBookings = state.userBookings.filter(b => b._id !== action.payload);
         state.allBookings = state.allBookings.filter(b => b._id !== action.payload);
+      })
+      .addCase(updateBookingStatus.fulfilled, (state, action) => {
+        // Update the booking in both arrays
+        const updatedBooking = action.payload;
+        const index = state.allBookings.findIndex(b => b._id === updatedBooking._id);
+        if (index !== -1) {
+          state.allBookings[index] = updatedBooking;
+        }
+        const userIndex = state.userBookings.findIndex(b => b._id === updatedBooking._id);
+        if (userIndex !== -1) {
+          state.userBookings[userIndex] = updatedBooking;
+        }
       });
   }
 });
@@ -93,3 +122,4 @@ export const selectUserBookings = (state) => state.bookings?.userBookings || [];
 export const selectBookingById = (state, bookingId) =>
   (state.bookings?.allBookings || []).find(b => b._id === bookingId);
 export default bookingSlice.reducer;
+

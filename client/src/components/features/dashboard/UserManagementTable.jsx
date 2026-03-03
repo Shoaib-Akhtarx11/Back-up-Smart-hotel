@@ -5,11 +5,27 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 const UserManagementTable = ({ users, type }) => {
   const dispatch = useDispatch();
 
-  const handleEdit = (user) => {
-    alert(`Edit feature for ${user.name} - Updates will be shown as alert messages`);
+  // Helper to safely get user data with case-insensitive field names
+  const getField = (user, field) => {
+    const lowerField = field.toLowerCase();
+    // Try lowercase first
+    if (user[lowerField] !== undefined) return user[lowerField];
+    // Try PascalCase
+    if (user[field] !== undefined) return user[field];
+    return '';
   };
 
-  const handleDelete = (id, name) => {
+  const getId = (user) => getField(user, 'id') || user._id || user.UserID || '';
+  const getName = (user) => getField(user, 'name') || user.Name || '';
+  const getEmail = (user) => getField(user, 'email') || user.Email || '';
+
+  const handleEdit = (user) => {
+    alert(`Edit feature for ${getName(user)} - Updates will be shown as alert messages`);
+  };
+
+  const handleDelete = (user) => {
+    const name = getName(user);
+    const id = getId(user);
     const confirmDelete = window.confirm(
       `Are you sure you want to remove ${name} from the database? This action is permanent.`
     );
@@ -42,13 +58,13 @@ const UserManagementTable = ({ users, type }) => {
           <tbody>
             {users.length > 0 ? (
               users.map((user) => (
-                <tr key={user.id} className="border-bottom">
-                  <td className="px-4 fw-bold text-muted">#{user.id}</td>
+                <tr key={getId(user)} className="border-bottom">
+                  <td className="px-4 fw-bold text-muted">#{getId(user)}</td>
                   <td>
-                    <div className="fw-bold">{user.name}</div>
-                    <div className="small text-muted d-md-none">{user.email}</div>
+                    <div className="fw-bold">{getName(user)}</div>
+                    <div className="small text-muted d-md-none">{getEmail(user)}</div>
                   </td>
-                  <td className="text-muted d-none d-md-table-cell">{user.email}</td>
+                  <td className="text-muted d-none d-md-table-cell">{getEmail(user)}</td>
                   <td>
                     {type === "manager" ? (
                       <span className="badge bg-info-subtle text-info border border-info-subtle px-3 rounded-pill">
@@ -78,7 +94,7 @@ const UserManagementTable = ({ users, type }) => {
                       <button 
                         className="btn btn-sm btn-light border" 
                         title="Delete User"
-                        onClick={() => handleDelete(user.id, user.name)}
+                        onClick={() => handleDelete(user)}
                       >
                         <FaTrash className="text-danger" />
                       </button>

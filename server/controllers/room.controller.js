@@ -6,7 +6,7 @@ import Hotel from '../models/hotel.model.js';
 // @access  Private (manager/admin)
 export const createRoom = async (req, res) => {
   try {
-    const { HotelID, Type, Price, Features } = req.body;
+    const { HotelID, Type, Price, Features, Image } = req.body;
 
     if (!HotelID || !Type || Price === undefined) {
       return res.status(400).json({ success: false, message: 'HotelID, Type and Price are required' });
@@ -17,7 +17,7 @@ export const createRoom = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
 
-    if (hotel.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (hotel.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized to add room to this hotel' });
     }
 
@@ -27,6 +27,7 @@ export const createRoom = async (req, res) => {
       Price,
       Availability: true,
       Features: Features || [],
+      Image: Image || '',
     });
 
     return res.status(201).json({ success: true, data: room });
@@ -77,15 +78,16 @@ export const updateRoom = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
 
-    if (room.HotelID.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (room.HotelID.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized to update this room' });
     }
 
-    const { Type, Price, Availability, Features } = req.body;
+    const { Type, Price, Availability, Features, Image } = req.body;
     if (Type) room.Type = Type;
     if (Price !== undefined) room.Price = Price;
     if (Availability !== undefined) room.Availability = Availability;
     if (Features) room.Features = Features;
+    if (Image) room.Image = Image;
 
     await room.save();
     return res.status(200).json({ success: true, data: room });
@@ -105,7 +107,7 @@ export const deleteRoom = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
 
-    if (room.HotelID.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+    if (room.HotelID.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized to delete this room' });
     }
 

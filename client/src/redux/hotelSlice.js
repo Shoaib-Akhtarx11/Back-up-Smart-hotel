@@ -1,14 +1,39 @@
 import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
+
 // Async thunk to fetch hotels from backend
 export const fetchHotels = createAsyncThunk('hotels/fetchHotels', async () => {
-  const res = await fetch('http://localhost:5600/api/hotels'); // adjust port if needed
+  const res = await fetch(`${API_BASE}/api/hotels`, {
+    credentials: 'include'
+  });
   const data = await res.json();
   console.log(data)
   if (!data.success) {
     throw new Error(data.message || 'Failed to fetch hotels');
   }
-  return data.data; // backend returns { success, data }
+  
+  // Transform backend data to frontend format with proper field mappings
+  const transformedHotels = data.data.map(hotel => ({
+    _id: hotel._id,
+    id: hotel._id,
+    name: hotel.Name,
+    location: hotel.Location,
+    rating: hotel.Rating || 0,
+    stars: hotel.Rating ? Math.round(hotel.Rating * 2) : 4, // Convert 0-5 rating to stars (1-5)
+    image: hotel.Image || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+    features: hotel.Amenities || [],
+    amenities: hotel.Amenities || [],
+    reviewsCount: hotel.reviewsCount || Math.floor(Math.random() * 500) + 50, // Default reviews if not populated
+    tag: "Recommended",
+    provider: "Official Site",
+    offer: "Standard Rates",
+    // Since rooms aren't fetched on HotelList page, we'll set a default minPrice
+    // This will be overridden if rooms are available in the selector
+    minPrice: 0 // Will be calculated from rooms if available, otherwise use default in selector
+  }));
+  
+  return transformedHotels;
 });
 
 const hotelSlice = createSlice({
@@ -17,7 +42,7 @@ const hotelSlice = createSlice({
     allHotels: [],
     filters: {
       location: "Any region",
-      priceMin: 500,
+      priceMin: 0, // Changed from 500 to 0 to show hotels without rooms
       priceMax: 100000,
       sortBy: "Featured stays",
       advancedFeatures: [],
@@ -33,7 +58,7 @@ const hotelSlice = createSlice({
     resetFilters: (state) => {
       state.filters = {
         location: "Any region",
-        priceMin: 500,
+        priceMin: 0,
         priceMax: 100000,
         sortBy: "Featured stays",
         advancedFeatures: [],
@@ -70,17 +95,18 @@ export const selectFilteredHotels = createSelector(
     try {
       const hotelsWithPrice = allHotels.map(hotel => {
         const hotelRooms = roomsData.filter(
-          room => String(room.hotelId).toLowerCase() === String(hotel._id).toLowerCase()
+          room => String(room.HotelID).toLowerCase() === String(hotel._id).toLowerCase()
         );
         
+        // Calculate minPrice from rooms, or use a default value if no rooms
         const minPrice = hotelRooms.length > 0 
-          ? Math.min(...hotelRooms.map(r => r.price)) 
-          : 0;
+          ? Math.min(...hotelRooms.map(r => r.Price || r.price || 0))
+          : 3000; // Default minimum price when no rooms available
 
         const allAttributes = [
-          ...(hotel.features || []), 
+          ...(hotel.features || []),
           ...(hotel.amenities || [])
-        ].map(attr => attr.toLowerCase());
+        ].map(attr => String(attr).toLowerCase());
         
         return { ...hotel, minPrice, allAttributes };
       });

@@ -3,12 +3,11 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 export const createPayment = createAsyncThunk('payment/createPayment', async (paymentData) => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/payments`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(paymentData)
   });
@@ -20,9 +19,8 @@ export const createPayment = createAsyncThunk('payment/createPayment', async (pa
 });
 
 export const fetchUserPayments = createAsyncThunk('payment/fetchUserPayments', async () => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/payments`, {
-    headers: { 'Authorization': `Bearer ${token}` }
+    credentials: 'include'
   });
   const data = await res.json();
   if (!data.success) {
@@ -32,10 +30,9 @@ export const fetchUserPayments = createAsyncThunk('payment/fetchUserPayments', a
 });
 
 export const refundPayment = createAsyncThunk('payment/refundPayment', async (paymentId) => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/payments/${paymentId}`, {
     method: 'PUT',
-    headers: { 'Authorization': `Bearer ${token}` }
+    credentials: 'include'
   });
   const data = await res.json();
   if (!data.success) {

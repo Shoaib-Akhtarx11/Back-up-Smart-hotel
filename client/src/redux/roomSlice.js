@@ -3,7 +3,9 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 export const fetchRoomsByHotel = createAsyncThunk('rooms/fetchRoomsByHotel', async (hotelId) => {
-  const res = await fetch(`${API_BASE}/api/rooms?HotelID=${hotelId}`);
+  const res = await fetch(`${API_BASE}/api/rooms?HotelID=${hotelId}`, {
+    credentials: 'include'
+  });
   const data = await res.json();
   if (!data.success) {
     throw new Error(data.message || 'Failed to fetch rooms');
@@ -12,13 +14,12 @@ export const fetchRoomsByHotel = createAsyncThunk('rooms/fetchRoomsByHotel', asy
 });
 
 export const createRoom = createAsyncThunk('rooms/createRoom', async (roomData) => {
-  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/rooms`, {
     method: 'POST',
     headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Content-Type': 'application/json'
     },
+    credentials: 'include',
     body: JSON.stringify(roomData)
   });
   const data = await res.json();

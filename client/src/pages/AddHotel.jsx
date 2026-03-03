@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-// import { addHotel, updateHotel } from '../redux/hotelSlice';
+import { fetchHotels } from '../redux/hotelSlice';
 import NavBar from '../components/layout/NavBar';
 import Footer from '../components/layout/Footer';
 import { FaArrowLeft, FaPlus } from 'react-icons/fa';
 import { generateNewManager, autoAssignManager, countManagerHotels } from '../utils/managerGenerator';
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 const AddHotel = () => {
     const navigate = useNavigate();
@@ -121,7 +123,7 @@ const AddHotel = () => {
         return Object.keys(newErrors).length === 0;
     };
     
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         
         if (!validateForm()) {
@@ -130,71 +132,49 @@ const AddHotel = () => {
         
         try {
             if (isEditing) {
-                // Update existing hotel
-                const updatedHotel = {
-                    id: editHotel.id,
-                    managerId: editHotel.managerId, // Keep original manager
-                    name: formData.name,
-                    location: formData.location,
-                    rating: parseFloat(formData.rating),
-                    reviewsCount: formData.reviewsCount,
-                    tag: formData.tag,
-                    image: formData.image,
-                    offer: formData.offer,
-                    features: selectedFeatures,
-                    amenities: selectedAmenities
-                };
+                // Update existing hotel - call backend API
+                const response = await fetch(`${API_BASE}/api/hotels/${editHotel._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        Name: formData.name,
+                        Location: formData.location,
+                        Rating: parseFloat(formData.rating),
+                        Amenities: selectedAmenities,
+                        Image: formData.image
+                    })
+                });
                 
-                dispatch(updateHotel(updatedHotel));
-                
-                // Update localStorage
-                const allHotels = JSON.parse(localStorage.getItem('allHotels') || '[]');
-                const index = allHotels.findIndex(h => h.id === editHotel.id);
-                if (index >= 0) {
-                    allHotels[index] = updatedHotel;
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message);
                 }
-                localStorage.setItem('allHotels', JSON.stringify(allHotels));
                 
                 alert(`${formData.name} is updated`);
+                dispatch(fetchHotels());
             } else {
-                // Add new hotel - Auto-assign manager if admin didn't select one
-                let assignedManagerId = formData.managerId;
+                // Add new hotel - call backend API
+                const response = await fetch(`${API_BASE}/api/hotels`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        Name: formData.name,
+                        Location: formData.location,
+                        Rating: parseFloat(formData.rating),
+                        Amenities: selectedAmenities,
+                        Image: formData.image
+                    })
+                });
                 
-                if (isAdmin && !assignedManagerId) {
-                    // Auto-assign based on load balancing
-                    assignedManagerId = autoAssignManager();
-                } else if (!isAdmin) {
-                    // Manager is adding hotel, use their own ID
-                    assignedManagerId = currentManager?.id;
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message);
                 }
                 
-                const newHotel = {
-                    id: `h${Date.now()}`,
-                    name: formData.name,
-                    location: formData.location,
-                    managerId: assignedManagerId,
-                    rating: parseFloat(formData.rating),
-                    reviewsCount: 0,
-                    tag: formData.tag,
-                    image: formData.image,
-                    offer: formData.offer,
-                    features: selectedFeatures,
-                    amenities: selectedAmenities
-                };
-                
-                dispatch(addHotel(newHotel));
-                
-                // Save to localStorage
-                const allHotels = JSON.parse(localStorage.getItem('allHotels') || '[]');
-                allHotels.push(newHotel);
-                localStorage.setItem('allHotels', JSON.stringify(allHotels));
-                
-                // Get manager name for confirmation
-                const storedUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
-                const assignedManager = storedUsers.find(u => u.id == assignedManagerId);
-                const managerName = assignedManager?.name || 'New Manager';
-                
-                alert(`${formData.name} is created and assigned to ${managerName}`);
+                alert(`${formData.name} is created successfully!`);
+                dispatch(fetchHotels());
             }
             
             // Reset form
