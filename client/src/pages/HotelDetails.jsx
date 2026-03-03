@@ -28,7 +28,7 @@ const HotelDetails = () => {
   const roomsByHotel = useSelector(selectRoomsByHotel(id));
   const { hotel, availableRooms } = useMemo(() => {
     try {
-      const foundHotel = allHotels.find((h) => String(h.id) === String(id));
+      const foundHotel = allHotels.find((h) => String(h._id) === String(id));
       return { hotel: foundHotel, availableRooms: roomsByHotel || [] };
     } catch (err) {
       console.error("Data processing error in HotelDetails:", err);
@@ -54,7 +54,7 @@ const HotelDetails = () => {
 
   const handleQuickBook = () => {
     // Check if any room is actually available
-    const roomsWithAvailability = availableRooms.filter(r => r.availability === true || r.availability === "true");
+    const roomsWithAvailability = availableRooms.filter(r => r.Availability === true || r.Availability === "true");
     
     if (roomsWithAvailability.length > 0) {
       // Scroll to the Room Selection Section

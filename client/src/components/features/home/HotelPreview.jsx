@@ -53,7 +53,7 @@ function HotelPreview() {
         {previewHotels.length > 0 ? (
           previewHotels.map((hotel) => (
             <div
-              key={hotel.id}
+              key={hotel._id}
               className="col-12 col-sm-6 col-lg-3 d-flex justify-content-center"
             >
               <div

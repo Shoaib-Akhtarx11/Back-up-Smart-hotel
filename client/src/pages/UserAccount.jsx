@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
-import { logout, updateAuthUser } from "../redux/authSlice";
+import { logout } from "../redux/authSlice";
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaTrophy, FaCalendar, FaBuilding } from "react-icons/fa";
 import { getUserBookings, getUserLoyalty } from "../utils/userDataManager";
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { updateUser } from '../../../redux/userSlice';
 
 const EditUserModal = ({ user, show, onClose, type = 'customer' }) => {
     const dispatch = useDispatch();
@@ -20,10 +19,11 @@ const EditUserModal = ({ user, show, onClose, type = 'customer' }) => {
         setLoading(true);
 
         try {
-            dispatch(updateUser({
-                id: user.id,
-                ...formData
-            }));
+            // TODO: Implement user update via backend API
+            // dispatch(updateUser({
+            //   id: user.id,
+            //   ...formData
+            // }));
 
             // Save to localStorage for persistence
             const allUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');

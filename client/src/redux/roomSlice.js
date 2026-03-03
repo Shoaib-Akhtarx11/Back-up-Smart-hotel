@@ -1,49 +1,90 @@
-import { createSlice, createSelector } from '@reduxjs/toolkit';
-import roomsData from "../data/rooms.json";
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
+
+export const fetchRoomsByHotel = createAsyncThunk('rooms/fetchRoomsByHotel', async (hotelId) => {
+  const res = await fetch(`${API_BASE}/api/rooms?HotelID=${hotelId}`);
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.message || 'Failed to fetch rooms');
+  }
+  return data.data;
+});
+
+export const createRoom = createAsyncThunk('rooms/createRoom', async (roomData) => {
+  const token = localStorage.getItem('token');
+  const res = await fetch(`${API_BASE}/api/rooms`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(roomData)
+  });
+  const data = await res.json();
+  if (!data.success) {
+    throw new Error(data.message || 'Failed to create room');
+  }
+  return data.data;
+});
 
 const roomSlice = createSlice({
   name: 'rooms',
   initialState: {
-    allRooms: roomsData || [], // Always load from JSON on app start
+    allRooms: [],
     loading: false,
     error: null
   },
   reducers: {
     updateRoomAvailability: (state, action) => {
       const { roomId, availability } = action.payload;
-      const room = state.allRooms.find(r => r.id === roomId);
+      const room = state.allRooms.find(r => r._id === roomId);
       if (room) {
-        room.availability = availability;
-        // Persist room availability to localStorage
-        const allRooms = JSON.parse(localStorage.getItem('allRooms') || JSON.stringify(state.allRooms));
-        const roomIndex = allRooms.findIndex(r => r.id === roomId);
-        if (roomIndex !== -1) {
-          allRooms[roomIndex].availability = availability;
-          localStorage.setItem('allRooms', JSON.stringify(allRooms));
-        }
+        room.Availability = availability;
       }
     },
 
     addRoom: (state, action) => {
       state.allRooms.push(action.payload);
-      // Sync to localStorage
-      localStorage.setItem('allRooms', JSON.stringify(state.allRooms));
     },
 
     deleteRoom: (state, action) => {
-      state.allRooms = state.allRooms.filter(r => r.id !== action.payload);
-      // Sync to localStorage
-      localStorage.setItem('allRooms', JSON.stringify(state.allRooms));
+      state.allRooms = state.allRooms.filter(r => r._id !== action.payload);
     },
 
     updateRoom: (state, action) => {
-      const index = state.allRooms.findIndex(r => r.id === action.payload.id);
+      const index = state.allRooms.findIndex(r => r._id === action.payload._id);
       if (index !== -1) {
         state.allRooms[index] = { ...state.allRooms[index], ...action.payload };
       }
-      // Sync to localStorage
-      localStorage.setItem('allRooms', JSON.stringify(state.allRooms));
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchRoomsByHotel.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchRoomsByHotel.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allRooms = action.payload;
+      })
+      .addCase(fetchRoomsByHotel.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      .addCase(createRoom.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createRoom.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allRooms.push(action.payload);
+      })
+      .addCase(createRoom.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
   }
 });
 
@@ -61,7 +102,7 @@ export const selectRoomsByHotel = (hotelId) =>
     [selectAllRoomsBase],
     (rooms) =>
       rooms.filter(
-        room => String(room.hotelId).toLowerCase() === String(hotelId).toLowerCase()
+        room => String(room.HotelID).toLowerCase() === String(hotelId).toLowerCase()
       )
   );
 export default roomSlice.reducer;

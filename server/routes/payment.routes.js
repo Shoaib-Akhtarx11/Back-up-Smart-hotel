@@ -3,20 +3,18 @@ import {
   createPayment,
   getPayments,
   getPayment,
-  updatePayment,
-  deletePayment,
+  refundPayment,
 } from '../controllers/payment.controller.js';
-import { protect, authorize } from '../middleware/auth.middleware.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(protect, getPayments)
-  .post(protect, authorize('guest'), createPayment);
+  .post(protect, createPayment);
 
 router.route('/:id')
   .get(protect, getPayment)
-  .put(protect, authorize('admin'), updatePayment)
-  .delete(protect, authorize('admin'), deletePayment);
+  .put(protect, refundPayment);
 
 export default router;

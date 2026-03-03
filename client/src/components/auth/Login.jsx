@@ -3,10 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaTimes } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { login } from "../../redux/authSlice";
-import userData from "../../data/users.json"; // This imports your 4 admins
- 
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
- 
+
 const styles = {
   container: {
     height: "100vh",
@@ -84,115 +83,60 @@ const styles = {
     color: "#333",
   },
 };
- 
+
 const Login = ({ onSuccess, onSwitchToRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("guest");
   const [error, setError] = useState("");
- 
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
   const redirectTo = location?.state?.redirectTo;
   const messageFromState = location?.state?.message;
- 
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    // Try server login first
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, role }),
-        });
- 
-        const data = await res.json();
- 
-        if (res.ok && data.success) {
-          const serverUser = data.user;
-          const token = data.token;
- 
-          // Normalize names
-          const fullName = serverUser.name || `${serverUser.firstName || 'User'} ${serverUser.lastName || ''}`.trim();
-          const nameParts = fullName.split(' ');
-          const firstName = serverUser.firstName || nameParts[0] || 'User';
-          const lastName = serverUser.lastName || nameParts.slice(1).join(' ') || '';
- 
-          const userForDispatch = { ...serverUser, firstName, lastName, name: fullName };
- 
-          // Save token for authenticated requests
-          if (token) localStorage.setItem('authToken', token);
- 
-          dispatch(login({ user: userForDispatch, role: serverUser.role || role }));
- 
-          if (onSuccess) onSuccess();
- 
-          if (redirectTo) {
-            navigate(redirectTo);
-          } else if (userForDispatch.role === "admin") {
-            navigate("/admin");
-          } else if (userForDispatch.role === "manager") {
-            navigate("/manager");
-          } else {
-            navigate("/");
-          }
-          return;
-        }
- 
-        // If server responded with error, show message
-        if (data && data.message) {
-          setError(data.message);
-          return;
-        }
- 
-        // If server didn't work or returned unexpected shape, fallback to local
-      } catch (err) {
-        // network or server unavailable - fall back to local users
-        console.warn('Server login failed, falling back to local auth', err);
-      }
- 
-      // Local fallback (keeps existing behavior)
-      const registeredUsers = JSON.parse(localStorage.getItem("allUsers")) || [];
-      const allUsers = [...userData, ...registeredUsers];
- 
-      const foundUser = allUsers.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password,
-      );
- 
-      if (foundUser) {
-        if (foundUser.role !== role) {
-          return setError(`Mismatch: This account is registered as ${foundUser.role}.`);
-        }
- 
-        const fullName = foundUser.firstName && foundUser.lastName ? `${foundUser.firstName} ${foundUser.lastName}` : foundUser.name || 'User';
-        const nameParts = fullName.split(' ');
-        const firstName = foundUser.firstName || nameParts[0] || 'User';
-        const lastName = foundUser.lastName || nameParts.slice(1).join(' ') || '';
- 
-        const userForDispatch = { ...foundUser, firstName, lastName, name: fullName };
- 
-        dispatch(login({ user: userForDispatch, role: role }));
- 
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ Email: email, Password: password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const { user, token } = data;
+
+        dispatch(login({ user, token }));
+
         if (onSuccess) onSuccess();
- 
+        console.log(user)
         if (redirectTo) {
           navigate(redirectTo);
-        } else if (userForDispatch.role === "admin") {
+        } else if (user.Role === "admin") {
           navigate("/admin");
-        } else if (userForDispatch.role === "manager") {
+        } else if (user.Role === "manager") {
           navigate("/manager");
         } else {
           navigate("/");
         }
       } else {
-        setError("Invalid email or password.");
+        setError(data.message || "Login failed. Please try again.");
       }
-    })();
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("Could not connect to server. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
- 
+
   return (
     <div style={styles.container}>
       <div style={styles.box}>
@@ -207,34 +151,28 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
         )}
         {error && <p style={styles.error}>{error}</p>}
         <form onSubmit={handleSubmit}>
-          <label style={styles.label}>Login As</label>
-          <select
-            style={styles.input}
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="guest">Guest User</option>
-            <option value="manager">Hotel Manager</option>
-            <option value="admin">System Admin</option>
-          </select>
+          <label style={styles.label}>Email</label>
           <input
             type="email"
             placeholder="Email"
+            autoComplete="username"
             style={styles.input}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+          <label style={styles.label}>Password</label>
           <input
             type="password"
             placeholder="Password"
+            autoComplete="current-password"
             style={styles.input}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <button type="submit" style={styles.button}>
-            Login
+          <button type="submit" style={styles.button} disabled={loading}>
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
         <p style={styles.text}>
@@ -251,7 +189,5 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
     </div>
   );
 };
- 
+
 export default Login;
- 
- 

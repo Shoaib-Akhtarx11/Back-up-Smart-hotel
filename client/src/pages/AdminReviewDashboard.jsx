@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { selectAllReviews, approveReview, deleteReview } from '../redux/reviewSlice';
+import { selectAllReviews, deleteReview } from '../redux/reviewSlice';
 import { selectAllHotels } from '../redux/hotelSlice';
 import NavBar from '../components/layout/NavBar';
 import Footer from '../components/layout/Footer';

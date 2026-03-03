@@ -9,6 +9,7 @@ import bookingReducer from './bookingSlice';
 import paymentReducer from './paymentSlice';
 import reviewReducer from './reviewSlice';
 import redemptionReducer from './redemptionSlice';
+import loyaltyReducer from './loyaltySlice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -16,15 +17,16 @@ const rootReducer = combineReducers({
   users: userReducer,
   rooms: roomReducer,
   bookings: bookingReducer,
-  payments: paymentReducer,
+  payment: paymentReducer,
   reviews: reviewReducer,
   redemptions: redemptionReducer,
+  loyalty: loyaltyReducer,
 });
 
 const persistConfig = {
-  key: 'smart-hotel-v1',
+  key: 'smart-hotel-v2',
   storage,
-  whitelist: ['auth', 'users', 'bookings', 'payments', 'redemptions', 'hotels', 'rooms', 'reviews'] // Persist all critical data
+  whitelist: ['auth', 'users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty'] // Persist all critical data
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -39,7 +41,7 @@ export const store = configureStore({
         ignoredActionPaths: ['payload'],
         ignoredPaths: [
           'bookings.allBookings',
-          'payments.allPayments',
+          'payment.payments',
           'redemptions.allRedemptions'
         ]
       },

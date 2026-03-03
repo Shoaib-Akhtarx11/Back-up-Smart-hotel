@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { logout } from "../redux/authSlice";
-import { deleteHotel } from "../redux/hotelSlice";
+// import { deleteHotel } from "../redux/hotelSlice";
 import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
 import UserManagementTable from "../components/features/dashboard/UserManagementTable";

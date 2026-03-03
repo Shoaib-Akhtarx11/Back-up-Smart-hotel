@@ -1,18 +1,17 @@
 import express from 'express';
 import {
   getLoyalty,
-  createLoyalty,
+  getLoyaltyHistory,
   updateLoyalty,
+  addPoints,
 } from '../controllers/loyalty.controller.js';
-import { protect, authorize } from '../middleware/auth.middleware.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-router.route('/')
-  .get(protect, getLoyalty)
-  .post(protect, createLoyalty);
-
-router.route('/:id')
-  .put(protect, authorize('admin'), updateLoyalty);
+router.get('/:userId', protect, getLoyalty);
+router.get('/history/:userId', protect, getLoyaltyHistory);
+router.put('/:userId', protect, updateLoyalty);
+router.post('/add-points', protect, addPoints);
 
 export default router;

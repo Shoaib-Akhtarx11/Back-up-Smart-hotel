@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { addLoyaltyPoints } from "../redux/userSlice";
 import { createBooking } from "../redux/bookingSlice";
-import { recordPayment } from "../redux/paymentSlice";
+
 import { updateRoomAvailability } from "../redux/roomSlice";
 import { selectAllHotels } from "../redux/hotelSlice";
 import { selectRoomsByHotel } from "../redux/roomSlice";
-import { getUserBookings, saveUserBookings } from "../utils/userDataManager";
 import BookingForm from "../components/features/booking/BookingForm";
 import PaymentModal from "../components/features/booking/PaymentModal";
 import NavBar from "../components/layout/NavBar";
@@ -45,8 +43,8 @@ const BookingPage = () => {
   // Separate effect for loading hotel and room data
   useEffect(() => {
     try {
-      const foundHotel = allHotels.find((h) => String(h.id) === String(hotelId));
-      const foundRoom = roomsByHotel.find((r) => String(r.id) === String(roomId));
+      const foundHotel = allHotels.find((h) => String(h._id) === String(hotelId));
+      const foundRoom = roomsByHotel.find((r) => String(r._id) === String(roomId));
 
       if (!foundHotel || !foundRoom) {
         navigate("/error", {
@@ -68,7 +66,7 @@ const BookingPage = () => {
   const priceCalculation = useMemo(() => {
     if (!room) return { base: 0, tax: 0, total: 0 };
     const nights = bookingSummary?.nights || 1;
-    const base = room.price * nights;
+    const base = room.Price * nights;
     const tax = base * 0.12;
     return { base, tax, total: base + tax };
   }, [room, bookingSummary]);
@@ -84,9 +82,9 @@ const BookingPage = () => {
     try {
       setShowPayment(false);
       // 1 point per rupee of total booking amount
-      const pointsToEarn = Math.floor(priceCalculation.total);
+      const pointsToEarn = Math.floor(priceCalculation.total / 100); // 1 point per $100 spent
       const bookingId = `BK-${Date.now()}`;
-      const userId = currentUser?.id;
+      const userId = currentUser?._id;
 
       // Convert Date objects to ISO strings before dispatching
       const checkInDate = bookingSummary.checkIn instanceof Date 
@@ -97,55 +95,31 @@ const BookingPage = () => {
         : String(bookingSummary.checkOut);
 
       const newBooking = {
-        id: bookingId,
-        userId: userId,
-        roomId: room.id,
-        hotelId: hotel.id,
-        checkInDate: checkInDate,
-        checkOutDate: checkOutDate,
-        status: 'Confirmed',
-        guestDetails: {
-          firstName: bookingSummary.firstName,
-          lastName: bookingSummary.lastName,
-          email: bookingSummary.email,
-          phone: bookingSummary.phone
-        },
-        totalPrice: priceCalculation.total,
-        loyaltyPointsEarned: pointsToEarn,
-        guestName: `${bookingSummary.firstName} ${bookingSummary.lastName}`,
-        email: bookingSummary.email,
-        rooms: 1,
-        createdAt: new Date().toISOString()
+        BookingID: bookingId,
+        UserID: userId,
+        RoomID: room._id,
+        HotelID: hotel._id,
+        CheckInDate: checkInDate,
+        CheckOutDate: checkOutDate,
+        Status: 'pending',
+        Amount: priceCalculation.total,
+        PaymentMethod: 'Card'
       };
 
-      // Save booking to Redux (global state)
+      // Dispatch createBooking async thunk from Redux
       dispatch(createBooking(newBooking));
 
-      // IMPORTANT: Also save to user-specific localStorage
-      if (userId) {
-        const userBookings = getUserBookings(userId);
-        userBookings.push(newBooking);
-        saveUserBookings(userId, userBookings);
-      }
-
+      // Record payment via API
       dispatch(recordPayment({
-        bookingId: bookingId,
-        userId: userId,
-        amount: priceCalculation.total,
-        paymentMethod: 'Card'
+        UserID: userId,
+        Amount: priceCalculation.total,
+        Status: 'paid',
+        PaymentMethod: 'Card'
       }));
 
-      dispatch(addLoyaltyPoints({
-        points: pointsToEarn,
-        activity: `Stay at ${hotel?.name}`,
-        hotelName: hotel?.name,
-        bookingId: bookingId,
-        userId: userId,
-      }));
-
-      // Update room availability to mark it as booked
+      // Update room availability
       dispatch(updateRoomAvailability({
-        roomId: room.id,
+        roomId: room._id,
         availability: false
       }));
 

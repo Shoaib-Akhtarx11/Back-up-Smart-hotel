@@ -2,17 +2,19 @@ import express from 'express';
 import {
   createRedemption,
   getRedemptions,
+  getRedemption,
   deleteRedemption,
 } from '../controllers/redemption.controller.js';
-import { protect, authorize } from '../middleware/auth.middleware.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(protect, getRedemptions)
-  .post(protect, authorize('guest'), createRedemption);
+  .post(protect, createRedemption);
 
 router.route('/:id')
-  .delete(protect, authorize('admin'), deleteRedemption);
+  .get(protect, getRedemption)
+  .delete(protect, deleteRedemption);
 
 export default router;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { updateHotel } from '../../../redux/hotelSlice';
+// import { updateHotel } from '../../../redux/hotelSlice';
 
 const HotelTable = ({ hotels, onDelete, onEdit, isManager = false }) => {
     const dispatch = useDispatch();

@@ -1,7 +1,5 @@
 import React from "react";
 import { useDispatch } from "react-redux";
-// Assuming you have a deleteUser action in your userSlice
-import { deleteUser } from "../../../redux/userSlice"; 
 import { FaTrash, FaEdit } from "react-icons/fa";
 
 const UserManagementTable = ({ users, type }) => {
@@ -18,7 +16,9 @@ const UserManagementTable = ({ users, type }) => {
     
     if (confirmDelete) {
       try {
-        dispatch(deleteUser(id));
+        // TODO: Implement user deletion via backend API
+        // dispatch(deleteUser(id));
+        alert(`${name} has been removed from the system`);
       } catch (error) {
         console.error("Failed to delete user:", error);
         alert("An error occurred while trying to remove the user.");

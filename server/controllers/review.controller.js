@@ -1,40 +1,65 @@
 import Review from '../models/review.model.js';
 import Hotel from '../models/hotel.model.js';
 
-// @desc    Create review (guest)
+// @desc    Submit a review and update hotel rating
 // @route   POST /api/reviews
 // @access  Private (guest)
 export const createReview = async (req, res) => {
   try {
-    const { hotelId, rating, comment } = req.body;
-    if (!hotelId || rating === undefined) {
-      return res.status(400).json({ success: false, message: 'hotelId and rating are required' });
+    const { HotelID, Rating, Comment } = req.body;
+
+    if (!HotelID || Rating === undefined) {
+      return res.status(400).json({ success: false, message: 'HotelID and Rating are required' });
     }
-    const hotel = await Hotel.findById(hotelId);
+    if (Rating < 1 || Rating > 5) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+
+    const hotel = await Hotel.findById(HotelID);
     if (!hotel) {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
+
     const review = await Review.create({
-      user: req.user.id,
-      hotel: hotelId,
-      rating,
-      comment,
+      UserID: req.user.id,
+      HotelID,
+      Rating,
+      Comment: Comment || '',
+      Timestamp: new Date(),
     });
-    return res.status(201).json({ success: true, data: review });
+
+    // Recalculate hotel rating
+    const allReviews = await Review.find({ HotelID });
+    const avgRating = (allReviews.reduce((sum, r) => sum + r.Rating, 0) / allReviews.length).toFixed(1);
+    hotel.Rating = parseFloat(avgRating);
+    await hotel.save();
+
+    return res.status(201).json({ 
+      success: true, 
+      data: review,
+      hotelNewRating: hotel.Rating,
+      message: `Review submitted! Hotel rating updated to ${hotel.Rating}` 
+    });
   } catch (error) {
     console.error('Create review error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
-// @desc    Get reviews (optional hotel filter)
-// @route   GET /api/reviews
+// @desc    Get reviews for a hotel or all reviews
+// @route   GET /api/reviews?HotelID=id
 // @access  Public
 export const getReviews = async (req, res) => {
   try {
-    const { hotelId } = req.query;
-    const filter = hotelId ? { hotel: hotelId } : {};
-    const reviews = await Review.find(filter).populate('user', 'name email');
+    const { HotelID } = req.query;
+    let filter = {};
+    if (HotelID) {
+      filter.HotelID = HotelID;
+    }
+    const reviews = await Review.find(filter)
+      .populate('UserID', 'Name Email')
+      .sort({ Timestamp: -1 });
+      
     return res.status(200).json({ success: true, data: reviews });
   } catch (error) {
     console.error('Get reviews error:', error);
@@ -42,7 +67,26 @@ export const getReviews = async (req, res) => {
   }
 };
 
-// @desc    Update review (owner or admin)
+// @desc    Get single review
+// @route   GET /api/reviews/:id
+// @access  Public
+export const getReview = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id)
+      .populate('UserID', 'Name Email')
+      .populate('HotelID', 'Name Location');
+      
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+    return res.status(200).json({ success: true, data: review });
+  } catch (error) {
+    console.error('Get review error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Update review and recalculate hotel rating
 // @route   PUT /api/reviews/:id
 // @access  Private
 export const updateReview = async (req, res) => {
@@ -51,13 +95,26 @@ export const updateReview = async (req, res) => {
     if (!review) {
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
-    if (req.user.role !== 'admin' && review.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to update this review' });
+    if (review.UserID.toString() !== req.user.id && req.user.Role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
-    const { rating, comment } = req.body;
-    if (rating !== undefined) review.rating = rating;
-    if (comment) review.comment = comment;
+
+    const { Rating, Comment } = req.body;
+    if (Rating !== undefined && (Rating < 1 || Rating > 5)) {
+      return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+    }
+    if (Rating !== undefined) review.Rating = Rating;
+    if (Comment) review.Comment = Comment;
+    
     await review.save();
+
+    // Recalculate hotel rating
+    const allReviews = await Review.find({ HotelID: review.HotelID });
+    const avgRating = (allReviews.reduce((sum, r) => sum + r.Rating, 0) / allReviews.length).toFixed(1);
+    const hotel = await Hotel.findById(review.HotelID);
+    hotel.Rating = parseFloat(avgRating);
+    await hotel.save();
+
     return res.status(200).json({ success: true, data: review });
   } catch (error) {
     console.error('Update review error:', error);
@@ -65,7 +122,7 @@ export const updateReview = async (req, res) => {
   }
 };
 
-// @desc    Delete review (owner or admin)
+// @desc    Delete review and recalculate hotel rating
 // @route   DELETE /api/reviews/:id
 // @access  Private
 export const deleteReview = async (req, res) => {
@@ -74,10 +131,24 @@ export const deleteReview = async (req, res) => {
     if (!review) {
       return res.status(404).json({ success: false, message: 'Review not found' });
     }
-    if (req.user.role !== 'admin' && review.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this review' });
+    if (review.UserID.toString() !== req.user.id && req.user.Role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
-    await review.remove();
+
+    const hotelID = review.HotelID;
+    await Review.findByIdAndDelete(req.params.id);
+
+    // Recalculate hotel rating
+    const allReviews = await Review.find({ HotelID: hotelID });
+    const hotel = await Hotel.findById(hotelID);
+    if (allReviews.length > 0) {
+      const avgRating = (allReviews.reduce((sum, r) => sum + r.Rating, 0) / allReviews.length).toFixed(1);
+      hotel.Rating = parseFloat(avgRating);
+    } else {
+      hotel.Rating = 0;
+    }
+    await hotel.save();
+
     return res.status(200).json({ success: true, message: 'Review deleted' });
   } catch (error) {
     console.error('Delete review error:', error);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { addHotel, updateHotel } from '../redux/hotelSlice';
+// import { addHotel, updateHotel } from '../redux/hotelSlice';
 import NavBar from '../components/layout/NavBar';
 import Footer from '../components/layout/Footer';
 import { FaArrowLeft, FaPlus } from 'react-icons/fa';

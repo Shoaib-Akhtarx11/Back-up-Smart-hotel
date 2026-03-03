@@ -1,54 +1,80 @@
 import Booking from '../models/booking.model.js';
 import Room from '../models/room.model.js';
+import LoyaltyAccount from '../models/loyalty.model.js';
 
-// @desc    Create a new booking (guest)
+// @desc    Create booking with loyalty points calculation
 // @route   POST /api/bookings
 // @access  Private (guest)
 export const createBooking = async (req, res) => {
   try {
-    const { roomId, checkInDate, checkOutDate } = req.body;
+    const { RoomID, CheckInDate, CheckOutDate } = req.body;
 
-    if (!roomId || !checkInDate || !checkOutDate) {
-      return res.status(400).json({ success: false, message: 'roomId, checkInDate and checkOutDate are required' });
+    if (!RoomID || !CheckInDate || !CheckOutDate) {
+      return res.status(400).json({ success: false, message: 'RoomID, CheckInDate and CheckOutDate are required' });
     }
 
-    const room = await Room.findById(roomId);
+    const room = await Room.findById(RoomID);
     if (!room) {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
-    if (!room.availability) {
+    if (!room.Availability) {
       return res.status(400).json({ success: false, message: 'Room is not available' });
     }
 
+    // Create booking
     const booking = await Booking.create({
-      user: req.user.id,
-      room: roomId,
-      checkInDate,
-      checkOutDate,
-      status: 'pending',
+      UserID: req.user.id,
+      RoomID,
+      CheckInDate,
+      CheckOutDate,
+      Status: 'pending',
     });
 
-    // Optionally set room availability to false
-    room.availability = false;
+    // Add loyalty points (1 point per 100 rupees spent)
+    const pointsEarned = Math.floor(room.Price / 100);
+    let loyalty = await LoyaltyAccount.findOne({ UserID: req.user.id });
+    if (!loyalty) {
+      loyalty = await LoyaltyAccount.create({
+        UserID: req.user.id,
+        PointsBalance: pointsEarned,
+        LastUpdated: new Date(),
+      });
+    } else {
+      loyalty.PointsBalance += pointsEarned;
+      loyalty.LastUpdated = new Date();
+      await loyalty.save();
+    }
+
+    // Mark room as unavailable
+    room.Availability = false;
     await room.save();
 
-    return res.status(201).json({ success: true, data: booking });
+    return res.status(201).json({ 
+      success: true, 
+      data: booking,
+      pointsEarned,
+      message: `Booking created! You earned ${pointsEarned} loyalty points` 
+    });
   } catch (error) {
     console.error('Create booking error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
-// @desc    Get bookings (user or admin)
+// @desc    Get bookings
 // @route   GET /api/bookings
 // @access  Private
 export const getBookings = async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role !== 'admin') {
-      filter.user = req.user.id;
+    if (req.user.Role !== 'admin') {
+      filter.UserID = req.user.id;
     }
-    const bookings = await Booking.find(filter).populate('room').populate('user', 'name email');
+    const bookings = await Booking.find(filter)
+      .populate('RoomID', 'Type Price HotelID')
+      .populate('RoomID.HotelID', 'Name Location')
+      .populate('UserID', 'Name Email');
+      
     return res.status(200).json({ success: true, data: bookings });
   } catch (error) {
     console.error('Get bookings error:', error);
@@ -61,12 +87,15 @@ export const getBookings = async (req, res) => {
 // @access  Private
 export const getBooking = async (req, res) => {
   try {
-    const booking = await Booking.findById(req.params.id).populate('room').populate('user', 'name email');
+    const booking = await Booking.findById(req.params.id)
+      .populate('RoomID')
+      .populate('UserID', 'Name Email ContactNumber');
+      
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (req.user.role !== 'admin' && booking.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to view this booking' });
+    if (req.user.Role !== 'admin' && booking.UserID._id.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
     return res.status(200).json({ success: true, data: booking });
   } catch (error) {
@@ -75,7 +104,7 @@ export const getBooking = async (req, res) => {
   }
 };
 
-// @desc    Update booking status (user can cancel, admin can change)
+// @desc    Update booking status
 // @route   PUT /api/bookings/:id
 // @access  Private
 export const updateBooking = async (req, res) => {
@@ -84,13 +113,14 @@ export const updateBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (req.user.role !== 'admin' && booking.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to update this booking' });
+    if (req.user.Role !== 'admin' && booking.UserID.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
-    const { status, checkInDate, checkOutDate } = req.body;
-    if (status) booking.status = status;
-    if (checkInDate) booking.checkInDate = checkInDate;
-    if (checkOutDate) booking.checkOutDate = checkOutDate;
+
+    const { Status, CheckInDate, CheckOutDate } = req.body;
+    if (Status) booking.Status = Status;
+    if (CheckInDate) booking.CheckInDate = CheckInDate;
+    if (CheckOutDate) booking.CheckOutDate = CheckOutDate;
 
     await booking.save();
     return res.status(200).json({ success: true, data: booking });
@@ -100,7 +130,7 @@ export const updateBooking = async (req, res) => {
   }
 };
 
-// @desc    Delete booking (user or admin)
+// @desc    Cancel booking
 // @route   DELETE /api/bookings/:id
 // @access  Private
 export const deleteBooking = async (req, res) => {
@@ -109,17 +139,18 @@ export const deleteBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (req.user.role !== 'admin' && booking.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this booking' });
+    if (req.user.Role !== 'admin' && booking.UserID.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    const room = await Room.findById(booking.room);
+    const room = await Room.findById(booking.RoomID);
     if (room) {
-      room.availability = true;
+      room.Availability = true;
       await room.save();
     }
-    await booking.remove();
-    return res.status(200).json({ success: true, message: 'Booking deleted' });
+    
+    await Booking.findByIdAndDelete(req.params.id);
+    return res.status(200).json({ success: true, message: 'Booking cancelled' });
   } catch (error) {
     console.error('Delete booking error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });

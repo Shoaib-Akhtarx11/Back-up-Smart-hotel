@@ -1,53 +1,81 @@
 import Payment from '../models/payment.model.js';
 import Booking from '../models/booking.model.js';
+import LoyaltyAccount from '../models/loyalty.model.js';
 
-// @desc    Create a payment for a booking (guest)
+// @desc    Create payment (simplified - no real gateway)
 // @route   POST /api/payments
-// @access  Private (guest)
+// @access  Private
 export const createPayment = async (req, res) => {
   try {
-    const { bookingId, amount, method } = req.body;
-    if (!bookingId || amount === undefined || !method) {
-      return res.status(400).json({ success: false, message: 'bookingId, amount and method are required' });
+    const { BookingID, Amount, PaymentMethod } = req.body;
+
+    if (!BookingID || !Amount || !PaymentMethod) {
+      return res.status(400).json({ success: false, message: 'BookingID, Amount, and PaymentMethod are required' });
     }
 
-    const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(BookingID);
     if (!booking) {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
-    if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized for this booking' });
+    if (booking.UserID.toString() !== req.user.id && req.user.Role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
+    // Create payment record
     const payment = await Payment.create({
-      user: req.user.id,
-      booking: bookingId,
-      amount,
-      method,
-      status: 'paid', // assuming immediate success for now
+      UserID: req.user.id,
+      BookingID,
+      Amount,
+      Status: 'paid',
+      PaymentMethod,
+      CreatedAt: new Date(),
     });
 
-    booking.payment = payment._id;
-    booking.status = 'confirmed';
+    // Update booking status to confirmed
+    booking.Status = 'confirmed';
+    booking.PaymentID = payment._id;
     await booking.save();
 
-    return res.status(201).json({ success: true, data: payment });
+    // Add loyalty points (1 point per 100 rupees)
+    const pointsEarned = Math.floor(Amount / 100);
+    let loyalty = await LoyaltyAccount.findOne({ UserID: req.user.id });
+    if (!loyalty) {
+      loyalty = await LoyaltyAccount.create({
+        UserID: req.user.id,
+        PointsBalance: pointsEarned,
+        LastUpdated: new Date(),
+      });
+    } else {
+      loyalty.PointsBalance += pointsEarned;
+      loyalty.LastUpdated = new Date();
+      await loyalty.save();
+    }
+
+    return res.status(201).json({
+      success: true,
+      data: payment,
+      pointsEarned,
+      message: `Payment successful! Booking confirmed. You earned ${pointsEarned} loyalty points`,
+    });
   } catch (error) {
     console.error('Create payment error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
 
-// @desc    Get payments (user or admin)
+// @desc    Get payments
 // @route   GET /api/payments
 // @access  Private
 export const getPayments = async (req, res) => {
   try {
     let filter = {};
-    if (req.user.role !== 'admin') {
-      filter.user = req.user.id;
+    if (req.user.Role !== 'admin') {
+      filter.UserID = req.user.id;
     }
-    const payments = await Payment.find(filter).populate('booking');
+    const payments = await Payment.find(filter)
+      .populate('BookingID', 'CheckInDate CheckOutDate Status')
+      .populate('UserID', 'Name Email');
+
     return res.status(200).json({ success: true, data: payments });
   } catch (error) {
     console.error('Get payments error:', error);
@@ -60,13 +88,17 @@ export const getPayments = async (req, res) => {
 // @access  Private
 export const getPayment = async (req, res) => {
   try {
-    const payment = await Payment.findById(req.params.id).populate('booking');
+    const payment = await Payment.findById(req.params.id)
+      .populate('BookingID')
+      .populate('UserID', 'Name Email ContactNumber');
+
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
-    if (req.user.role !== 'admin' && payment.user.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Not authorized to view this payment' });
+    if (req.user.Role !== 'admin' && payment.UserID._id.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
+
     return res.status(200).json({ success: true, data: payment });
   } catch (error) {
     console.error('Get payment error:', error);
@@ -74,38 +106,33 @@ export const getPayment = async (req, res) => {
   }
 };
 
-// @desc    Update payment status (admin)
+// @desc    Refund payment
 // @route   PUT /api/payments/:id
-// @access  Private (admin)
-export const updatePayment = async (req, res) => {
+// @access  Private
+export const refundPayment = async (req, res) => {
   try {
     const payment = await Payment.findById(req.params.id);
     if (!payment) {
       return res.status(404).json({ success: false, message: 'Payment not found' });
     }
-    const { status } = req.body;
-    if (status) payment.status = status;
-    await payment.save();
-    return res.status(200).json({ success: true, data: payment });
-  } catch (error) {
-    console.error('Update payment error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Server error' });
-  }
-};
+    if (req.user.Role !== 'admin' && payment.UserID.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
+    }
 
-// @desc    Delete payment (admin)
-// @route   DELETE /api/payments/:id
-// @access  Private (admin)
-export const deletePayment = async (req, res) => {
-  try {
-    const payment = await Payment.findById(req.params.id);
-    if (!payment) {
-      return res.status(404).json({ success: false, message: 'Payment not found' });
+    // Update payment status
+    payment.Status = 'refunded';
+    await payment.save();
+
+    // Update booking status
+    const booking = await Booking.findById(payment.BookingID);
+    if (booking) {
+      booking.Status = 'cancelled';
+      await booking.save();
     }
-    await payment.remove();
-    return res.status(200).json({ success: true, message: 'Payment deleted' });
+
+    return res.status(200).json({ success: true, data: payment, message: 'Payment refunded successfully' });
   } catch (error) {
-    console.error('Delete payment error:', error);
+    console.error('Refund payment error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

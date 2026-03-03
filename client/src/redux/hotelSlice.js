@@ -1,13 +1,20 @@
-import { createSlice, createSelector } from '@reduxjs/toolkit';
-import hotelsData from "../data/hotels.json";
+import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit';
 
+// Async thunk to fetch hotels from backend
+export const fetchHotels = createAsyncThunk('hotels/fetchHotels', async () => {
+  const res = await fetch('http://localhost:5600/api/hotels'); // adjust port if needed
+  const data = await res.json();
+  console.log(data)
+  if (!data.success) {
+    throw new Error(data.message || 'Failed to fetch hotels');
+  }
+  return data.data; // backend returns { success, data }
+});
 
-
-const localHotels = JSON.parse(localStorage.getItem("hotels")) || [];
 const hotelSlice = createSlice({
   name: 'hotels',
   initialState: {
-    allHotels: [...hotelsData, ...localHotels] || [], // Always load from JSON on app start
+    allHotels: [],
     filters: {
       location: "Any region",
       priceMin: 500,
@@ -15,13 +22,14 @@ const hotelSlice = createSlice({
       sortBy: "Featured stays",
       advancedFeatures: [],
       searchQuery: ""
-    }
+    },
+    loading: false,
+    error: null
   },
   reducers: {
     setGlobalFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
     },
-    
     resetFilters: (state) => {
       state.filters = {
         location: "Any region",
@@ -31,58 +39,38 @@ const hotelSlice = createSlice({
         advancedFeatures: [],
         searchQuery: ""
       };
-    },
-
-    addHotel: (state, action) => {
-      state.allHotels.push(action.payload);
-      // Sync to localStorage
-      localStorage.setItem('allHotels', JSON.stringify(state.allHotels));
-    },
-
-    updateHotel: (state, action) => {
-      const index = state.allHotels.findIndex(h => h.id === action.payload.id);
-      if (index !== -1) {
-        state.allHotels[index] = { ...state.allHotels[index], ...action.payload };
-      }
-      // Sync to localStorage
-      localStorage.setItem('allHotels', JSON.stringify(state.allHotels));
-    },
-    
-    deleteHotel: (state, action) => {
-      state.allHotels = state.allHotels.filter(
-        (hotel) => hotel.id !== action.payload
-      );
-      // Sync to localStorage
-      localStorage.setItem('allHotels', JSON.stringify(state.allHotels));
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchHotels.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchHotels.fulfilled, (state, action) => {
+        state.loading = false;
+        state.allHotels = action.payload;
+      })
+      .addCase(fetchHotels.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
   }
 });
 
-export const { 
-  setGlobalFilters, 
-  resetFilters, 
-  addHotel,
-  updateHotel, 
-  deleteHotel 
-} = hotelSlice.actions;
+export const { setGlobalFilters, resetFilters } = hotelSlice.actions;
 
 export const selectAllHotels = (state) => state.hotels.allHotels;
 export const selectFilters = (state) => state.hotels.filters;
 
-/**
- * COMPUTED SELECTOR - Now uses roomsSlice data
- */
+// Computed selector
 export const selectFilteredHotels = createSelector(
   [selectAllHotels, selectFilters, (state) => state.rooms?.allRooms || []],
   (allHotels, filters, roomsData) => {
     try {
-      // console.log('[selectFilteredHotels] allHotels count:', allHotels?.length || 0);
-      // console.log('[selectFilteredHotels] roomsData count:', roomsData?.length || 0);
-      // console.log('[selectFilteredHotels] filters:', filters);
-      
       const hotelsWithPrice = allHotels.map(hotel => {
         const hotelRooms = roomsData.filter(
-          room => String(room.hotelId).toLowerCase() === String(hotel.id).toLowerCase()
+          room => String(room.hotelId).toLowerCase() === String(hotel._id).toLowerCase()
         );
         
         const minPrice = hotelRooms.length > 0 
@@ -108,15 +96,12 @@ export const selectFilteredHotels = createSelector(
             hotel.allAttributes.includes(feat.toLowerCase())
           );
 
-        // Search query - matches both hotel name and location
         const matchesSearch = !filters.searchQuery || 
           hotel.name.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
           hotel.location.toLowerCase().includes(filters.searchQuery.toLowerCase());
 
         return matchesLocation && matchesPrice && matchesFeatures && matchesSearch;
       });
-
-      // console.log('[selectFilteredHotels] filtered count:', filtered.length);
 
       return [...filtered].sort((a, b) => {
         switch (filters.sortBy) {

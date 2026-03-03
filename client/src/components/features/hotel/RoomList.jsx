@@ -14,15 +14,15 @@ const RoomList = ({ rooms, hotelId }) => {
   const handleBooking = (room) => {
     try {
       // 1. Find current hotel safely for history tracking
-      const currentHotel = allHotels?.find(h => String(h.id) === String(hotelId));
+      const currentHotel = allHotels?.find(h => String(h._id) === String(hotelId));
       
       if (currentHotel) {
         dispatch(addToRecentVisits(currentHotel));
       }
 
       // 2. Navigate to booking route
-      if (room?.id && hotelId) {
-        navigate(`/booking/${hotelId}/${room.id}`);
+      if (room?._id && hotelId) {
+        navigate(`/booking/${hotelId}/${room._id}`);
       } else {
         throw new Error("Missing Room or Hotel ID");
       }
@@ -48,19 +48,19 @@ const RoomList = ({ rooms, hotelId }) => {
     <div className="row g-4 animate__animated animate__fadeInUp">
       {rooms.map((room) => {
         try {
-          if (!room || !room.type) throw new Error("Malformed Room Data");
+          if (!room || !room.Type) throw new Error("Malformed Room Data");
 
-          const isAvailable = room.availability === true || room.availability === "true";
+          const isAvailable = room.Availability === true || room.Availability === "true";
 
           return (
-            <div key={room.id || Math.random()} className="col-md-6 col-xl-4">
+            <div key={room._id || Math.random()} className="col-md-6 col-xl-4">
               <div className={`card h-100 border-0 shadow-sm rounded-4 overflow-hidden transition-all ${isAvailable ? 'room-card-hover' : 'opacity-75'}`}>
                 
                 {/* Image Section with Overlay for Sold Out */}
                 <div style={{ height: "200px", position: "relative", overflow: 'hidden' }}>
                    <img 
                      src={room.image || "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=800"} 
-                     alt={room.type} 
+                     alt={room.Type} 
                      className="w-100 h-100 hotel-img-zoom" 
                      style={{ objectFit: 'cover' }}
                      loading="lazy"
@@ -78,7 +78,7 @@ const RoomList = ({ rooms, hotelId }) => {
                   {/* Room Title & Status */}
                   <div className="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                      <h5 className="fw-bold mb-0 text-dark">{room.type}</h5>
+                      <h5 className="fw-bold mb-0 text-dark">{room.Type}</h5>
                       <small className="text-muted">{room.size || "Standard Size"}</small>
                     </div>
                     <span className={`badge rounded-pill px-3 py-2 ${isAvailable ? 'bg-success-subtle text-success' : 'bg-light text-muted'}`}>
@@ -89,7 +89,7 @@ const RoomList = ({ rooms, hotelId }) => {
                   {/* Features List */}
                   <div className="mb-4 flex-grow-1">
                     <div className="row g-2">
-                      {room.features?.slice(0, 4).map((feature, index) => (
+                      {room.Features?.slice(0, 4).map((feature, index) => (
                         <div key={index} className="col-6">
                           <span className="text-muted small d-flex align-items-center">
                             <i className="bi bi-check2 text-primary me-2"></i>
@@ -105,7 +105,7 @@ const RoomList = ({ rooms, hotelId }) => {
                     <div>
                       <span className="text-muted xsmall d-block" style={{ fontSize: '11px' }}>Per Night</span>
                       <h4 className="fw-bold text-dark mb-0">
-                        ₹{room.price ? Number(room.price).toLocaleString() : "---"}
+                        ₹{room.Price ? Number(room.Price).toLocaleString() : "---"}
                       </h4>
                     </div>
                     

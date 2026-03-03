@@ -5,17 +5,17 @@ import Hotel from '../models/hotel.model.js';
 // @access  Private (manager/admin)
 export const createHotel = async (req, res) => {
   try {
-    const { name, location, amenities } = req.body;
+    const { Name, Location, Amenities } = req.body;
 
-    if (!name || !location) {
-      return res.status(400).json({ success: false, message: 'Name and location are required' });
+    if (!Name || !Location) {
+      return res.status(400).json({ success: false, message: 'Name and Location are required' });
     }
 
     const hotel = await Hotel.create({
-      name,
-      location,
-      amenities,
-      manager: req.user.id,
+      Name,
+      Location,
+      Amenities: Amenities || [],
+      ManagerID: req.user.id,
     });
 
     return res.status(201).json({ success: true, data: hotel });
@@ -30,7 +30,7 @@ export const createHotel = async (req, res) => {
 // @access  Public
 export const getHotels = async (req, res) => {
   try {
-    const hotels = await Hotel.find().populate('manager', 'name email');
+    const hotels = await Hotel.find().populate('ManagerID', 'Name Email ContactNumber');
     return res.status(200).json({ success: true, data: hotels });
   } catch (error) {
     console.error('Get hotels error:', error);
@@ -43,7 +43,7 @@ export const getHotels = async (req, res) => {
 // @access  Public
 export const getHotel = async (req, res) => {
   try {
-    const hotel = await Hotel.findById(req.params.id).populate('manager', 'name email');
+    const hotel = await Hotel.findById(req.params.id).populate('ManagerID', 'Name Email ContactNumber');
     if (!hotel) {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
@@ -64,16 +64,16 @@ export const updateHotel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
 
-    // only manager who owns hotel or admin can update
-    if (hotel.manager.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized to update this hotel' });
+    // Only manager who owns hotel or admin can update
+    if (hotel.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    const { name, location, amenities, rating } = req.body;
-    if (name) hotel.name = name;
-    if (location) hotel.location = location;
-    if (amenities) hotel.amenities = amenities;
-    if (rating !== undefined) hotel.rating = rating;
+    const { Name, Location, Amenities, Rating } = req.body;
+    if (Name) hotel.Name = Name;
+    if (Location) hotel.Location = Location;
+    if (Amenities) hotel.Amenities = Amenities;
+    if (Rating !== undefined) hotel.Rating = Rating;
 
     await hotel.save();
 
@@ -94,11 +94,11 @@ export const deleteHotel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
 
-    if (hotel.manager.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized to delete this hotel' });
+    if (hotel.ManagerID.toString() !== req.user.id && req.user.Role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    await hotel.remove();
+    await Hotel.findByIdAndDelete(req.params.id);
 
     return res.status(200).json({ success: true, message: 'Hotel deleted' });
   } catch (error) {

@@ -80,13 +80,13 @@ export const register = async (req, res) => {
 // @access  Public
 export const login = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { Email, Password } = req.body;
 
-    if (!email || !password) {
+    if (!Email || !Password) {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    const lower = email.toLowerCase();
+    const lower = Email.toLowerCase();
     // search either current or legacy field in case some docs still use it
     const user = await User.findOne({ $or: [{ Email: lower }, { email: lower }] }).select('+Password');
 
@@ -94,17 +94,10 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    const isPasswordCorrect = await user.matchPassword(password);
+    const isPasswordCorrect = await user.matchPassword(Password);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-
-    if (role && user.Role !== role && role !== 'guest') {
-      return res.status(403).json({
-        success: false,
-        message: `You don't have access as ${role}. Your role is ${user.Role}`,
-      });
     }
 
     const token = generateToken(user._id, user.Role);

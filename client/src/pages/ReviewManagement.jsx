@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { selectHotelReviews, addManagerResponse } from "../redux/reviewSlice";
+import { selectHotelReviews } from "../redux/reviewSlice";
 import { selectAllHotels } from "../redux/hotelSlice";
 import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
@@ -59,13 +59,11 @@ const ReviewManagement = () => {
       alert("Please write a reply");
       return;
     }
-    dispatch(
-      addManagerResponse({
-        reviewId: review.id,
-        response: replyText.trim(),
-        managerId: managerId,
-      }),
-    );
+    // TODO: Implement manager response feature via backend API
+    // dispatch(updateReview({
+    //   reviewId: review.id,
+    //   updates: { managerReply: replyText.trim() }
+    // }));
     setReplyingTo(null);
     setEditingReply(null);
     setReplyText("");

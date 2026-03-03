@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { deleteHotel } from '../redux/hotelSlice';
+// import { deleteHotel } from '../redux/hotelSlice';
 import { logout } from '../redux/authSlice';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import Footer from '../components/layout/Footer';
