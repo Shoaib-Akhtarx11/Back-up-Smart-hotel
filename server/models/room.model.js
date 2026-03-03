@@ -2,25 +2,30 @@ import mongoose from 'mongoose';
 
 const RoomSchema = new mongoose.Schema(
   {
-    hotel: {
+    RoomID: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+    },
+    HotelID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hotel',
-      required: [true, 'Hotel reference is required'],
+      required: [true, 'Hotel ID is required'],
     },
-    type: {
+    Type: {
       type: String,
       required: [true, 'Please provide a room type'],
+      trim: true,
     },
-    price: {
+    Price: {
       type: Number,
       required: [true, 'Please provide a price'],
       min: [0, 'Price cannot be negative'],
     },
-    availability: {
+    Availability: {
       type: Boolean,
       default: true,
     },
-    features: [String],
+    Features: [String],
   },
   { timestamps: true }
 );

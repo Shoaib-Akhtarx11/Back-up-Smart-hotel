@@ -4,7 +4,10 @@ import { FaTimes } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { registerUser } from "../../redux/authSlice";
 import users from "../../data/users.json";
-
+// default should match the backend port defined in server/.env (5600)
+// you can override by setting VITE_API_URL in a client-side .env file
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
+ 
 const styles = {
   container: { minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", padding: "40px 20px", background: "#f9f9f9" },
   box: { position: "relative", backgroundColor: "#fff", padding: "30px 25px", borderRadius: "12px", width: "100%", maxWidth: "400px", textAlign: "center", boxShadow: "0px 8px 20px rgba(0,0,0,0.15)" },
@@ -18,154 +21,147 @@ const styles = {
   success: { color: "green", marginBottom: "10px", fontSize: "13px" },
   closeButton: { position: "absolute", top: "15px", right: "15px", background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#333", display: "flex", alignItems: "center", justifyContent: "center", padding: "5px" },
 };
-
+ 
 const Register = ({ onSwitchToLogin }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+ 
   const [formData, setFormData] = useState({
-    name: "",
-    role: "guest",
-    age: "",
-    email: "",
-    phoneNo: "",
-    password: "",
-    confirmPassword: ""
+    Name: "",
+    Role: "guest",
+    Email: "",
+    ContactNumber: "",
+    Password: "",
+    ConfirmPassword: ""
   });
-
+ 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
+ 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const handleSubmit = (e) => {
+ 
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-
-    const { name, email, password, confirmPassword, role, age, phoneNo } = formData;
-
+ 
+    const { Name, Email, Password, ConfirmPassword, Role, ContactNumber } = formData;
+ 
     // 1. Validations
-    if (!name || !email || !password || !confirmPassword || !age || !phoneNo) {
+    if (!Name || !Email || !Password || !ConfirmPassword || !ContactNumber) {
       return setError("Please fill all fields");
     }
-
+ 
     // Name validation: Only letters and spaces, minimum 2 characters
     const nameRegex = /^[a-zA-Z\s]{2,}$/;
-    if (!nameRegex.test(name)) {
+    if (!nameRegex.test(Name)) {
       return setError("Name must contain only letters and spaces (minimum 2 characters)");
     }
-
+ 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(Email)) {
       return setError("Please enter a valid email address");
     }
-
-    // Phone number validation: 10 digits
+ 
+    // Contact number validation: 10 digits
     const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(phoneNo.replace(/\D/g, ""))) {
-      return setError("Phone number must be 10 digits");
+    if (!phoneRegex.test(ContactNumber.replace(/\D/g, ""))) {
+      return setError("Contact number must be 10 digits");
     }
-
-    // Age validation: Must be between 18 and 100
-    const ageNum = parseInt(age);
-    if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
-      return setError("Age must be between 18 and 100");
-    }
-    
-
-    if (password !== confirmPassword) {
+ 
+    if (Password !== ConfirmPassword) {
       return setError("Passwords do not match");
     }
-    if(password.length < 8){
-      return setError("Password cannot be less than 8 letters or number")
+ 
+    if (Password.length < 8) {
+      return setError("Password cannot be less than 8 letters or number");
     }
-
-    // 2. Check for duplicate email in current localStorage
-    const existingUsers = JSON.parse(localStorage.getItem("allUsers")|| "[]") || users.map((user)=>user.email);
-    if (existingUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-      return setError("This email is already registered.");
-    }
-
-    // 3. Prepare User Object
-    const newUser = {
-      id: Date.now(),
-      name,
-      email,
-      password,
-      role,
-      age: parseInt(age),
-      contactNumber: phoneNo
-    };
-
-    // 4. Dispatch to Redux 
-    // The Redux slice handles updating the array and saving to localStorage
-    dispatch(registerUser(newUser));
-
-    setSuccess("Registration Successful! Please login.");
-
-    // 5. Automatic View Switch
-    setTimeout(() => {
-      if (onSwitchToLogin) {
-        onSwitchToLogin(); // Transitions to Login.jsx via parent/App.jsx navigate
+ 
+    // 2. Prepare payload
+    const payload = { Name, Email, Password, ConfirmPassword, Role, ContactNumber };
+ 
+    try {
+      // Ensure API_BASE matches your server (e.g., http://localhost:3001)
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+ 
+      const data = await res.json();
+ 
+      if (res.ok && data.success) {
+        setSuccess("User saved to Database successfully!");
+        setTimeout(() => {
+          if (onSwitchToLogin) {
+            onSwitchToLogin();
+          } else {
+            navigate('/login');
+          }
+        }, 1500);
+        return; // Stop here! Don't run the fallback.
       } else {
-        navigate("/login");
+        // If the server sent an error (e.g., Email already exists)
+        return setError(data.message || "Registration failed");
       }
-    }, 1500);
+    } catch (err) {
+      console.error("Full error object:", err);
+      console.error("Error message:", err.message);
+      console.error("API_BASE used:", API_BASE);
+      console.error("Attempted URL:", `${API_BASE}/api/auth/register`);
+      setError("Could not connect to server. Check if backend is running.");
+    }
   };
-
+ 
   return (
     <div style={styles.container}>
       <div style={styles.box}>
         <button onClick={() => navigate("/")} style={styles.closeButton}>
           <FaTimes />
         </button>
-
+ 
         <h2 style={styles.title}>Sign Up</h2>
-        
+       
         {error && <p style={styles.error}>{error}</p>}
-
+ 
         {/* Conditional rendering for success */}
         {success && <p style={styles.success}>{success}</p>}
-
+ 
         <form onSubmit={handleSubmit}>
           <label style={styles.label}>Register As</label>
-          <select name="role" style={styles.input} value={formData.role} onChange={handleChange}>
+          <select name="Role" style={styles.input} value={formData.Role} onChange={handleChange}>
             <option value="guest">Guest User</option>
             <option value="manager">Hotel Manager</option>
           </select>
-
+ 
           <label style={styles.label}>Name</label>
-          <input name="name" type="text" placeholder="Name" style={styles.input} onChange={handleChange} />
-
-          <label style={styles.label}>Age</label>
-          <input name="age" type="number" placeholder="Age" style={styles.input} onChange={handleChange} />
-
-          <label style={styles.label}>Phone Number</label>
-          <input name="phoneNo" type="text" placeholder="Phone Number" style={styles.input} onChange={handleChange} />
-
+          <input name="Name" type="text" placeholder="Name" style={styles.input} onChange={handleChange} />
+ 
+          <label style={styles.label}>Contact Number</label>
+          <input name="ContactNumber" type="text" placeholder="Contact Number" style={styles.input} onChange={handleChange} />
+ 
           <label style={styles.label}>Email Id</label>
-          <input name="email" type="email" placeholder="Email" style={styles.input} onChange={handleChange} />
-
+          <input name="Email" type="email" placeholder="Email" style={styles.input} onChange={handleChange} />
+ 
           <label style={styles.label}>Password</label>
-          <input name="password" type="password" placeholder="Password" style={styles.input} onChange={handleChange} />
-
+          <input name="Password" type="password" placeholder="Password" style={styles.input} onChange={handleChange} />
+ 
           <label style={styles.label}>Confirm Password</label>
-          <input name="confirmPassword" type="password" placeholder="Confirm Password" style={styles.input} onChange={handleChange} />
-
+          <input name="ConfirmPassword" type="password" placeholder="Confirm Password" style={styles.input} onChange={handleChange} />
+ 
           <button type="submit" style={styles.button}>Register</button>
         </form>
-
+ 
         <p style={styles.text}>
-          Already have an account? 
+          Already have an account?
           <button type="button" onClick={onSwitchToLogin} style={styles.linkBtn}>Login</button>
         </p>
       </div>
     </div>
   );
 };
-
+ 
 export default Register;

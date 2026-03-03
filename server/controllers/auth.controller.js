@@ -13,18 +13,18 @@ const generateToken = (id, role) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { name, email, password, confirmPassword, role, age, phoneNo } = req.body;
+    const { Name, Email, Password, ConfirmPassword, Role, ContactNumber } = req.body;
 
     // Validations
-    if (!name || !email || !password || !confirmPassword || !age || !phoneNo) {
+    if (!Name || !Email || !Password || !ConfirmPassword || !ContactNumber) {
       return res.status(400).json({ success: false, message: 'Please fill all fields' });
     }
 
-    if (password !== confirmPassword) {
+    if (Password !== ConfirmPassword) {
       return res.status(400).json({ success: false, message: 'Passwords do not match' });
     }
 
-    if (password.length < 8) {
+    if (Password.length < 8) {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 8 characters long',
@@ -32,24 +32,27 @@ export const register = async (req, res) => {
     }
 
     // Check if user already exists
-    let user = await User.findOne({ email: email.toLowerCase() });
+    const normalized = Email.toLowerCase();
+    let user = await User.findOne({ $or: [{ Email: normalized }, { email: normalized }] });
     if (user) {
       return res.status(400).json({ success: false, message: 'User already exists' });
     }
 
-    // Create user
+    // Create user (write both PascalCase and lowercase fields to keep the
+    // old unique index satisfied and support any legacy queries)
+    const normalizedEmail = Email.toLowerCase();
     user = await User.create({
-      name,
-      email: email.toLowerCase(),
-      password,
-      role: role || 'guest',
-      age: parseInt(age),
-      phoneNo,
+      Name,
+      Email: normalizedEmail,
+      email: normalizedEmail, // legacy field
+      Password,
+      Role: Role || 'guest',
+      ContactNumber,
     });
 
     // Return user without password
     const userResponse = user.toObject();
-    delete userResponse.password;
+    delete userResponse.Password;
 
     return res.status(201).json({
       success: true,
@@ -83,7 +86,9 @@ export const login = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const lower = email.toLowerCase();
+    // search either current or legacy field in case some docs still use it
+    const user = await User.findOne({ $or: [{ Email: lower }, { email: lower }] }).select('+Password');
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -95,17 +100,17 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    if (role && user.role !== role && role !== 'guest') {
+    if (role && user.Role !== role && role !== 'guest') {
       return res.status(403).json({
         success: false,
-        message: `You don't have access as ${role}. Your role is ${user.role}`,
+        message: `You don't have access as ${role}. Your role is ${user.Role}`,
       });
     }
 
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id, user.Role);
 
     const userResponse = user.toObject();
-    delete userResponse.password;
+    delete userResponse.Password;
 
     return res.status(200).json({
       success: true,
@@ -145,19 +150,19 @@ export const getMe = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
   try {
-    const { name, age, phoneNo } = req.body;
+    const { Name, ContactNumber } = req.body;
     const userId = req.user.id;
 
-    if (!name && !age && !phoneNo) {
+    if (!Name && !ContactNumber) {
       return res.status(400).json({
         success: false,
         message: 'Please provide at least one field to update'
       });
     }
 
-    if (name) {
+    if (Name) {
       const nameRegex = /^[a-zA-Z\s]{2,}$/;
-      if (!nameRegex.test(name)) {
+      if (!nameRegex.test(Name)) {
         return res.status(400).json({
           success: false,
           message: 'Name must contain only letters and spaces (minimum 2 characters)'
@@ -165,30 +170,19 @@ export const updateProfile = async (req, res) => {
       }
     }
 
-    if (age) {
-      const ageNum = parseInt(age);
-      if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
-        return res.status(400).json({
-          success: false,
-          message: 'Age must be between 18 and 100'
-        });
-      }
-    }
-
-    if (phoneNo) {
+    if (ContactNumber) {
       const phoneRegex = /^\d{10}$/;
-      if (!phoneRegex.test(phoneNo.replace(/\D/g, ''))) {
+      if (!phoneRegex.test(ContactNumber.replace(/\D/g, ''))) {
         return res.status(400).json({
           success: false,
-          message: 'Phone number must be 10 digits'
+          message: 'Contact number must be 10 digits'
         });
       }
     }
 
     const updateData = {};
-    if (name) updateData.name = name;
-    if (age) updateData.age = parseInt(age);
-    if (phoneNo) updateData.phoneNo = phoneNo;
+    if (Name) updateData.Name = Name;
+    if (ContactNumber) updateData.ContactNumber = ContactNumber;
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -207,7 +201,7 @@ export const updateProfile = async (req, res) => {
     }
 
     const userResponse = user.toObject();
-    delete userResponse.password;
+    delete userResponse.Password;
 
     return res.status(200).json({
       success: true,
@@ -262,7 +256,7 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId).select('+password');
+    const user = await User.findById(userId).select('+Password');
 
     if (!user) {
       return res.status(404).json({
@@ -280,11 +274,11 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    user.password = newPassword;
+    user.Password = newPassword;
     await user.save();
 
     const userResponse = user.toObject();
-    delete userResponse.password;
+    delete userResponse.Password;
 
     return res.status(200).json({
       success: true,

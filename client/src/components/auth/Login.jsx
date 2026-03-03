@@ -4,7 +4,9 @@ import { FaTimes } from "react-icons/fa";
 import { useDispatch } from "react-redux";
 import { login } from "../../redux/authSlice";
 import userData from "../../data/users.json"; // This imports your 4 admins
-
+ 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
+ 
 const styles = {
   container: {
     height: "100vh",
@@ -82,81 +84,115 @@ const styles = {
     color: "#333",
   },
 };
-
+ 
 const Login = ({ onSuccess, onSwitchToRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("guest");
   const [error, setError] = useState("");
-
+ 
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const location = useLocation();
   const redirectTo = location?.state?.redirectTo;
   const messageFromState = location?.state?.message;
-
+ 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
-
-    // 1. Combine Databases: JSON Admins + LocalStorage Users
-    const registeredUsers = JSON.parse(localStorage.getItem("allUsers")) || [];
-    const allUsers = [...userData, ...registeredUsers];
-
-    // 2. Find User (Case-insensitive email check)
-    const foundUser = allUsers.find(
-      (u) =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password,
-    );
-
-    if (foundUser) {
-      // 3. Validate Role
-      if (foundUser.role !== role) {
-        return setError(
-          `Mismatch: This account is registered as ${foundUser.role}.`,
-        );
+    // Try server login first
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, role }),
+        });
+ 
+        const data = await res.json();
+ 
+        if (res.ok && data.success) {
+          const serverUser = data.user;
+          const token = data.token;
+ 
+          // Normalize names
+          const fullName = serverUser.name || `${serverUser.firstName || 'User'} ${serverUser.lastName || ''}`.trim();
+          const nameParts = fullName.split(' ');
+          const firstName = serverUser.firstName || nameParts[0] || 'User';
+          const lastName = serverUser.lastName || nameParts.slice(1).join(' ') || '';
+ 
+          const userForDispatch = { ...serverUser, firstName, lastName, name: fullName };
+ 
+          // Save token for authenticated requests
+          if (token) localStorage.setItem('authToken', token);
+ 
+          dispatch(login({ user: userForDispatch, role: serverUser.role || role }));
+ 
+          if (onSuccess) onSuccess();
+ 
+          if (redirectTo) {
+            navigate(redirectTo);
+          } else if (userForDispatch.role === "admin") {
+            navigate("/admin");
+          } else if (userForDispatch.role === "manager") {
+            navigate("/manager");
+          } else {
+            navigate("/");
+          }
+          return;
+        }
+ 
+        // If server responded with error, show message
+        if (data && data.message) {
+          setError(data.message);
+          return;
+        }
+ 
+        // If server didn't work or returned unexpected shape, fallback to local
+      } catch (err) {
+        // network or server unavailable - fall back to local users
+        console.warn('Server login failed, falling back to local auth', err);
       }
-
-      // 4. Transform user object - ensure firstName and lastName are always set
-      const fullName = foundUser.firstName && foundUser.lastName 
-        ? `${foundUser.firstName} ${foundUser.lastName}`
-        : foundUser.name || 'User';
-      
-      const nameParts = fullName.split(' ');
-      const firstName = foundUser.firstName || nameParts[0] || 'User';
-      const lastName = foundUser.lastName || nameParts.slice(1).join(' ') || '';
-
-      const userForDispatch = {
-        ...foundUser,
-        firstName,
-        lastName,
-        name: fullName, // Keep original name field too
-      };
-
-      // Debug log
-
-      // 5. Dispatch Login
-      dispatch(login({ user: userForDispatch, role: role }));
-
-      // 6. Success Callback & Role-Based Redirection
-      if (onSuccess) onSuccess();
-
-      // Check if user was trying to book - redirect them back
-      if (redirectTo) {
-        navigate(redirectTo);
-      } else if (userForDispatch.role === "admin") {
-        navigate("/admin");
-      } else if (userForDispatch.role === "manager") {
-        navigate("/manager");
+ 
+      // Local fallback (keeps existing behavior)
+      const registeredUsers = JSON.parse(localStorage.getItem("allUsers")) || [];
+      const allUsers = [...userData, ...registeredUsers];
+ 
+      const foundUser = allUsers.find(
+        (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password,
+      );
+ 
+      if (foundUser) {
+        if (foundUser.role !== role) {
+          return setError(`Mismatch: This account is registered as ${foundUser.role}.`);
+        }
+ 
+        const fullName = foundUser.firstName && foundUser.lastName ? `${foundUser.firstName} ${foundUser.lastName}` : foundUser.name || 'User';
+        const nameParts = fullName.split(' ');
+        const firstName = foundUser.firstName || nameParts[0] || 'User';
+        const lastName = foundUser.lastName || nameParts.slice(1).join(' ') || '';
+ 
+        const userForDispatch = { ...foundUser, firstName, lastName, name: fullName };
+ 
+        dispatch(login({ user: userForDispatch, role: role }));
+ 
+        if (onSuccess) onSuccess();
+ 
+        if (redirectTo) {
+          navigate(redirectTo);
+        } else if (userForDispatch.role === "admin") {
+          navigate("/admin");
+        } else if (userForDispatch.role === "manager") {
+          navigate("/manager");
+        } else {
+          navigate("/");
+        }
       } else {
-        navigate("/");
+        setError("Invalid email or password.");
       }
-    } else {
-      setError("Invalid email or password.");
-    }
+    })();
   };
-
+ 
   return (
     <div style={styles.container}>
       <div style={styles.box}>
@@ -215,5 +251,7 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
     </div>
   );
 };
-
+ 
 export default Login;
+ 
+ 

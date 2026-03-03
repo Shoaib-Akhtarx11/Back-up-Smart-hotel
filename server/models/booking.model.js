@@ -2,30 +2,34 @@ import mongoose from 'mongoose';
 
 const BookingSchema = new mongoose.Schema(
   {
-    user: {
+    BookingID: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+    },
+    UserID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: [true, 'User ID is required'],
     },
-    room: {
+    RoomID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Room',
-      required: true,
+      required: [true, 'Room ID is required'],
     },
-    checkInDate: {
+    CheckInDate: {
       type: Date,
-      required: true,
+      required: [true, 'Check-in date is required'],
     },
-    checkOutDate: {
+    CheckOutDate: {
       type: Date,
-      required: true,
+      required: [true, 'Check-out date is required'],
     },
-    status: {
+    Status: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled'],
       default: 'pending',
     },
-    payment: {
+    PaymentID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
     },

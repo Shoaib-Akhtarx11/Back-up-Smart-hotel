@@ -2,29 +2,33 @@ import mongoose from 'mongoose';
 
 const PaymentSchema = new mongoose.Schema(
   {
-    user: {
+    PaymentID: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+    },
+    UserID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: [true, 'User ID is required'],
     },
-    booking: {
+    BookingID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
-      required: true,
+      required: [true, 'Booking ID is required'],
     },
-    amount: {
+    Amount: {
       type: Number,
-      required: true,
+      required: [true, 'Amount is required'],
       min: [0, 'Amount cannot be negative'],
     },
-    status: {
+    Status: {
       type: String,
       enum: ['pending', 'paid', 'failed', 'refunded'],
       default: 'pending',
     },
-    method: {
+    PaymentMethod: {
       type: String,
-      required: true,
+      required: [true, 'Payment method is required'],
     },
   },
   { timestamps: true }

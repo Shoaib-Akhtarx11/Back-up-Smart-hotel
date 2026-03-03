@@ -2,24 +2,30 @@ import mongoose from 'mongoose';
 
 const ReviewSchema = new mongoose.Schema(
   {
-    user: {
+    ReviewID: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+    },
+    UserID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: [true, 'User ID is required'],
     },
-    hotel: {
+    HotelID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Hotel',
-      required: true,
+      required: [true, 'Hotel ID is required'],
     },
-    rating: {
+    Rating: {
       type: Number,
-      required: true,
-      min: 1,
-      max: 5,
+      required: [true, 'Rating is required'],
+      min: [1, 'Rating must be at least 1'],
+      max: [5, 'Rating cannot exceed 5'],
     },
-    comment: String,
-    timestamp: {
+    Comment: {
+      type: String,
+    },
+    Timestamp: {
       type: Date,
       default: Date.now,
     },

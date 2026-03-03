@@ -2,25 +2,29 @@ import mongoose from 'mongoose';
 
 const RedemptionSchema = new mongoose.Schema(
   {
-    user: {
+    RedemptionID: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: () => new mongoose.Types.ObjectId(),
+    },
+    UserID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: [true, 'User ID is required'],
     },
-    booking: {
+    BookingID: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
-      required: true,
+      required: [true, 'Booking ID is required'],
     },
-    pointsUsed: {
+    PointsUsed: {
       type: Number,
-      required: true,
-      min: 0,
+      required: [true, 'Points used is required'],
+      min: [0, 'Points cannot be negative'],
     },
-    discountAmount: {
+    DiscountAmount: {
       type: Number,
-      required: true,
-      min: 0,
+      required: [true, 'Discount amount is required'],
+      min: [0, 'Discount cannot be negative'],
     },
   },
   { timestamps: true }
