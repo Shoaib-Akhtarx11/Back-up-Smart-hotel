@@ -16,6 +16,7 @@ import ReviewManagement from "./pages/ReviewManagement";
 import LoyaltyPage from "./pages/LoyaltyPage";
 import RecentVisit from "./pages/RecentVisit";
 import UserAccount from "./pages/UserAccount";
+import BookingSuccess from "./pages/BookingSuccess";
 import Error from "./pages/Error";
 
 // Auth Component Imports
@@ -40,6 +41,7 @@ const App = () => {
 
         {/* --- Booking Flow (Requires Hotel ID and Room ID) --- */}
         <Route path="/booking/:hotelId/:roomId" element={<BookingPage />} />
+        <Route path="/booking-success" element={<BookingSuccess />} />
 
         {/* --- User Account & Loyalty --- */}
         <Route path="/account" element={

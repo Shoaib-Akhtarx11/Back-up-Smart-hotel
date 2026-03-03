@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Room from '../models/room.model.js';
 import Hotel from '../models/hotel.model.js';
 
@@ -43,8 +44,50 @@ export const createRoom = async (req, res) => {
 export const getRooms = async (req, res) => {
   try {
     const { HotelID } = req.query;
-    const filter = HotelID ? { HotelID } : {};
-    const rooms = await Room.find(filter).populate('HotelID', 'Name Location Rating');
+    
+    let matchStage = {};
+    
+    if (HotelID) {
+      // Validate if HotelID is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(HotelID)) {
+        return res.status(400).json({ success: false, message: 'Invalid HotelID format' });
+      }
+      matchStage = { HotelID: new mongoose.Types.ObjectId(HotelID) };
+    }
+    
+    // Use aggregation to get rooms with hotel details
+    const rooms = await Room.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'hotels',
+          localField: 'HotelID',
+          foreignField: '_id',
+          as: 'hotelData'
+        }
+      },
+      { $unwind: { path: '$hotelData', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          HotelID: {
+            _id: '$hotelData._id',
+            Name: '$hotelData.Name',
+            Location: '$hotelData.Location',
+            Rating: '$hotelData.Rating'
+          },
+          Type: 1,
+          Price: 1,
+          Availability: 1,
+          Features: 1,
+          image: '$Image',
+          RoomID: 1,
+          createdAt: 1,
+          updatedAt: 1
+        }
+      }
+    ]);
+    
     return res.status(200).json({ success: true, data: rooms });
   } catch (error) {
     console.error('Get rooms error:', error);
@@ -118,3 +161,4 @@ export const deleteRoom = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
+

@@ -1,4 +1,5 @@
 import Hotel from '../models/hotel.model.js';
+import Room from '../models/room.model.js';
 
 // @desc    Create a new hotel (manager or admin)
 // @route   POST /api/hotels
@@ -26,13 +27,108 @@ export const createHotel = async (req, res) => {
   }
 };
 
-// @desc    Get list of hotels (public)
+// @desc    Get list of hotels with server-side filtering (public)
 // @route   GET /api/hotels
 // @access  Public
 export const getHotels = async (req, res) => {
   try {
-    const hotels = await Hotel.find().populate('ManagerID', 'Name Email ContactNumber');
-    return res.status(200).json({ success: true, data: hotels });
+    const { location, priceMin, priceMax, sortBy, searchQuery, features } = req.query;
+
+    // Build the aggregation pipeline
+    const pipeline = [];
+
+    // Stage 1: Lookup rooms for each hotel
+    pipeline.push({
+      $lookup: {
+        from: 'rooms',
+        localField: '_id',
+        foreignField: 'HotelID',
+        as: 'rooms'
+      }
+    });
+
+    // Stage 2: Add minPrice field from rooms
+    pipeline.push({
+      $addFields: {
+        minPrice: {
+          $cond: {
+            if: { $gt: [{ $size: '$rooms' }, 0] },
+            then: { $min: '$rooms.Price' },
+            else: null
+          }
+        },
+        // Also get available rooms count
+        availableRoomsCount: {
+          $size: {
+            $filter: {
+              input: '$rooms',
+              as: 'room',
+              cond: { $eq: ['$$room.Availability', true] }
+            }
+          }
+        }
+      }
+    });
+
+    // Stage 3: Build match conditions for filtering
+    const matchConditions = {};
+
+    // Filter by location
+    if (location && location !== 'Any region') {
+      matchConditions.Location = { $regex: location, $options: 'i' };
+    }
+
+    // Filter by price range (using minPrice)
+    if (priceMin || priceMax) {
+      matchConditions.minPrice = {};
+      if (priceMin) matchConditions.minPrice.$gte = Number(priceMin);
+      if (priceMax) matchConditions.minPrice.$lte = Number(priceMax);
+    }
+
+    // Filter by search query (name or location)
+    if (searchQuery) {
+      matchConditions.$or = [
+        { Name: { $regex: searchQuery, $options: 'i' } },
+        { Location: { $regex: searchQuery, $options: 'i' } }
+      ];
+    }
+
+    // Filter by features (amenities)
+    if (features) {
+      const featureList = features.split(',');
+      matchConditions.Amenities = { $all: featureList };
+    }
+
+    // Add match stage if we have conditions
+    if (Object.keys(matchConditions).length > 0) {
+      pipeline.push({ $match: matchConditions });
+    }
+
+    // Stage 4: Sort results
+    let sortStage = {};
+    switch (sortBy) {
+      case 'Price ascending':
+        sortStage = { minPrice: 1 };
+        break;
+      case 'Price descending':
+        sortStage = { minPrice: -1 };
+        break;
+      case 'Rating & Recommended':
+        sortStage = { Rating: -1 };
+        break;
+      default:
+        // Default sort - keep original order
+        sortStage = { _id: 1 };
+    }
+    pipeline.push({ $sort: sortStage });
+
+    // Execute aggregation
+    const hotels = await Hotel.aggregate(pipeline);
+
+    // Populate manager info for each hotel
+    const hotelsWithManager = await Hotel.populate(hotels, { path: 'ManagerID', select: 'Name Email ContactNumber' });
+
+    return res.status(200).json({ success: true, data: hotelsWithManager });
   } catch (error) {
     console.error('Get hotels error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });

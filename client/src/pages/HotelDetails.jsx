@@ -9,7 +9,7 @@ import ReviewSection from "../components/features/hotellist/ReviewSection";
 // Redux Actions & Selectors
 import { addToRecentVisits } from "../redux/userSlice";
 import { selectAllHotels } from "../redux/hotelSlice";
-import { selectRoomsByHotel } from "../redux/roomSlice";
+import { selectRoomsByHotel, fetchRoomsByHotel } from "../redux/roomSlice";
 
 const HotelDetails = () => {
   const { id } = useParams();
@@ -40,6 +40,13 @@ const HotelDetails = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]); // Only scroll when the hotel ID changes
+
+  // Fetch rooms for this hotel
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchRoomsByHotel(id));
+    }
+  }, [dispatch, id]);
 
   useEffect(() => {
     if (hotel) {

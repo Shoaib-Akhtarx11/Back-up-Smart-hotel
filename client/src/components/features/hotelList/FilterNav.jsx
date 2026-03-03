@@ -28,7 +28,7 @@ const FilterNav = () => {
   const [searchInput, setSearchInput] = useState(filters.searchQuery || "");
   const navRef = useRef(null);
  
-  const MIN_VAL = 500;
+  const MIN_VAL = 0;
   const MAX_VAL = 100000;
   const LOCATIONS = ["Any region", "Mumbai", "Kolkata", "Bangalore", "Goa", "Delhi", "Jaipur"];
   const SORT_OPTIONS = ["Featured stays", "Price ascending", "Price descending", "Rating & Recommended"];

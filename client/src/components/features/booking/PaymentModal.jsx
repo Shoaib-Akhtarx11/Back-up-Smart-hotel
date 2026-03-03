@@ -33,16 +33,16 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
       description: 'Direct bank account transfer'
     },
     {
-      id: 'wallet',
-      name: 'Digital Wallet',
-      icon: <FaWallet className="fs-3" />,
-      description: 'Google Pay, Apple Pay, PayPal'
-    },
-    {
       id: 'upi',
       name: 'UPI',
       icon: <FaMobileAlt className="fs-3" />,
-      description: 'Unified Payments Interface'
+      description: 'Google Pay, PhonePe, Paytm'
+    },
+    {
+      id: 'netbanking',
+      name: 'Net Banking',
+      icon: <FaWallet className="fs-3" />,
+      description: 'Online banking through your bank'
     }
   ];
 
@@ -100,13 +100,13 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
       if (!formData.accountNumber || formData.accountNumber.length < 10) {
         errors.accountNumber = 'Please enter a valid account number';
       }
-    } else if (selectedMethod === 'wallet') {
-      if (!formData.walletEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.walletEmail)) {
-        errors.walletEmail = 'Please enter a valid email';
-      }
     } else if (selectedMethod === 'upi') {
       if (!formData.phoneNumber || !/^\d{10}$/.test(formData.phoneNumber)) {
         errors.phoneNumber = 'Please enter a valid 10-digit phone number';
+      }
+    } else if (selectedMethod === 'netbanking') {
+      if (!formData.bankName) {
+        errors.bankName = 'Please select your bank';
       }
     }
 
@@ -240,6 +240,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                     value={formData.cardNumber}
                     onChange={handleInputChange}
                     maxLength="19"
+                    autoComplete="cc-number"
                     className={`rounded-2 ${formErrors.cardNumber ? 'is-invalid' : ''}`}
                   />
                   {formErrors.cardNumber && <Form.Text className="text-danger">{formErrors.cardNumber}</Form.Text>}
@@ -253,6 +254,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                     placeholder="John Doe"
                     value={formData.cardHolder}
                     onChange={handleInputChange}
+                    autoComplete="cc-name"
                     className={`rounded-2 ${formErrors.cardHolder ? 'is-invalid' : ''}`}
                   />
                   {formErrors.cardHolder && <Form.Text className="text-danger">{formErrors.cardHolder}</Form.Text>}
@@ -269,6 +271,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                         value={formData.expiryDate}
                         onChange={handleInputChange}
                         maxLength="5"
+                        autoComplete="cc-exp"
                         className={`rounded-2 ${formErrors.expiryDate ? 'is-invalid' : ''}`}
                       />
                       {formErrors.expiryDate && <Form.Text className="text-danger">{formErrors.expiryDate}</Form.Text>}
@@ -284,6 +287,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                         value={formData.cvv}
                         onChange={handleInputChange}
                         maxLength="4"
+                        autoComplete="cc-csc"
                         className={`rounded-2 ${formErrors.cvv ? 'is-invalid' : ''}`}
                       />
                       {formErrors.cvv && <Form.Text className="text-danger">{formErrors.cvv}</Form.Text>}
@@ -304,6 +308,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                     placeholder="e.g., ICICI Bank, HDFC Bank"
                     value={formData.bankName}
                     onChange={handleInputChange}
+                    autoComplete="organization"
                     className={`rounded-2 ${formErrors.bankName ? 'is-invalid' : ''}`}
                   />
                   {formErrors.bankName && <Form.Text className="text-danger">{formErrors.bankName}</Form.Text>}
@@ -317,6 +322,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                     placeholder="1234567890"
                     value={formData.accountNumber}
                     onChange={handleInputChange}
+                    autoComplete="off"
                     className={`rounded-2 ${formErrors.accountNumber ? 'is-invalid' : ''}`}
                   />
                   {formErrors.accountNumber && <Form.Text className="text-danger">{formErrors.accountNumber}</Form.Text>}
@@ -339,6 +345,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                     placeholder="your.email@example.com"
                     value={formData.walletEmail}
                     onChange={handleInputChange}
+                    autoComplete="email"
                     className={`rounded-2 ${formErrors.walletEmail ? 'is-invalid' : ''}`}
                   />
                   {formErrors.walletEmail && <Form.Text className="text-danger">{formErrors.walletEmail}</Form.Text>}
@@ -362,6 +369,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
                     value={formData.phoneNumber}
                     onChange={handleInputChange}
                     maxLength="10"
+                    autoComplete="tel"
                     className={`rounded-2 ${formErrors.phoneNumber ? 'is-invalid' : ''}`}
                   />
                   {formErrors.phoneNumber && <Form.Text className="text-danger">{formErrors.phoneNumber}</Form.Text>}
@@ -369,6 +377,37 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
 
                 <div className="alert alert-info small mt-3">
                   <strong>Note:</strong> You will receive a payment request on your UPI app.
+                </div>
+              </Form>
+            )}
+
+            {/* NET BANKING FORM */}
+            {selectedMethod === 'netbanking' && (
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label className="small fw-bold text-muted">Select Bank</Form.Label>
+                  <Form.Select
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleInputChange}
+                    autoComplete="off"
+                    className={`rounded-2 ${formErrors.bankName ? 'is-invalid' : ''}`}
+                  >
+                    <option value="">Select your bank</option>
+                    <option value="SBI">State Bank of India</option>
+                    <option value="HDFC">HDFC Bank</option>
+                    <option value="ICICI">ICICI Bank</option>
+                    <option value="Axis">Axis Bank</option>
+                    <option value="Kotak">Kotak Mahindra Bank</option>
+                    <option value="Yes Bank">Yes Bank</option>
+                    <option value="IDBI">IDBI Bank</option>
+                    <option value="PNB">Punjab National Bank</option>
+                  </Form.Select>
+                  {formErrors.bankName && <Form.Text className="text-danger">{formErrors.bankName}</Form.Text>}
+                </Form.Group>
+
+                <div className="alert alert-info small mt-3">
+                  <strong>Note:</strong> You will be redirected to your bank's secure login page.
                 </div>
               </Form>
             )}

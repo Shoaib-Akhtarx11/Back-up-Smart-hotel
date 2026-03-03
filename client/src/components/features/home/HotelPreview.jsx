@@ -11,9 +11,13 @@ function HotelPreview() {
 
   // Function to get minimum room price for a hotel
   const getMinPrice = (hotelId) => {
-    const hotelRooms = allRooms.filter((room) => room.hotelId === hotelId);
+    const hotelRooms = allRooms.filter((room) => {
+      // Handle both HotelID (from API) and hotelId formats
+      const roomHotelId = room.HotelID?._id || room.HotelID || room.hotelId;
+      return String(roomHotelId) === String(hotelId);
+    });
     if (hotelRooms.length === 0) return null;
-    const minPrice = Math.min(...hotelRooms.map((room) => room.price));
+    const minPrice = Math.min(...hotelRooms.map((room) => room.Price || room.price));
     return minPrice;
   };
 

@@ -2,9 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 
-const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
-    const [startDate, setStartDate] = useState(new Date());
-    const [endDate, setEndDate] = useState(new Date(new Date().setDate(new Date().getDate() + 1)));
+const BookingForm = ({ hotel, room, user, initialEmail, onSubmit }) => {
+    // Get today's date at midnight for proper comparison
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const [startDate, setStartDate] = useState(today);
+    const [endDate, setEndDate] = useState(new Date(today.getTime() + 86400000)); // tomorrow
+    const [checkInTime, setCheckInTime] = useState('14:00');
+    const [checkOutTime, setCheckOutTime] = useState('11:00');
     const [guestDetails, setGuestDetails] = useState({
         firstName: '',
         lastName: '',
@@ -13,6 +19,23 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
     });
     const [errors, setErrors] = useState({});
     const timerRef = useRef(null);
+
+    // Pre-fill form with user data when user prop is available
+    useEffect(() => {
+        if (user) {
+            // Parse Name into firstName and lastName
+            const nameParts = user.Name ? user.Name.split(' ') : ['', ''];
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+            
+            setGuestDetails(prev => ({
+                firstName: prev.firstName || firstName || '',
+                lastName: prev.lastName || lastName || '',
+                email: prev.email || user.Email || user.email || initialEmail || '',
+                phone: prev.phone || user.ContactNumber || user.phone || ''
+            }));
+        }
+    }, [user, initialEmail]);
 
     const calculateNights = () => {
         const diffTime = Math.abs(endDate - startDate);
@@ -36,7 +59,13 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
             newErrors.dates = 'Check-out date must be after check-in date';
         }
         
-        if (startDate <= new Date()+1) {
+        // Compare dates properly - check if check-in date is before today
+        const checkInDate = new Date(startDate);
+        checkInDate.setHours(0, 0, 0, 0);
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        
+        if (checkInDate < todayDate) {
             newErrors.startDate = 'Check-in date cannot be in the past';
         }
         
@@ -56,6 +85,8 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
                 ...guestDetails,
                 checkIn: startDate,
                 checkOut: endDate,
+                checkInTime,
+                checkOutTime,
                 nights: nights,
                 isDraft: true // Key: Tells parent NOT to show the modal
             });
@@ -64,7 +95,7 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
-    }, [startDate, endDate, guestDetails, onSubmit]);
+    }, [startDate, endDate, guestDetails, checkInTime, checkOutTime, onSubmit]);
 
     // FINAL SUBMIT: Triggered ONLY by the button click
     const handleFinalSubmit = (e) => {
@@ -78,6 +109,8 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
             ...guestDetails,
             checkIn: startDate,
             checkOut: endDate,
+            checkInTime,
+            checkOutTime,
             nights: nights,
             isDraft: false // Key: Tells parent TO show the modal
         });
@@ -158,7 +191,7 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
 
             <div className="row g-3 mb-4">
                 <div className="col-md-6">
-                    <label className="form-label small fw-bold text-muted">Check-in *</label>
+                    <label className="form-label small fw-bold text-muted">Check-in Date *</label>
                     <DatePicker 
                         selected={startDate} 
                         className={`form-control w-100 rounded-3 ${errors.startDate || errors.dates ? 'is-invalid' : ''}`}
@@ -172,7 +205,16 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
                     {(errors.startDate || errors.dates) && <div className="invalid-feedback d-block">{errors.startDate || errors.dates}</div>}
                 </div>
                 <div className="col-md-6">
-                    <label className="form-label small fw-bold text-muted">Check-out *</label>
+                    <label className="form-label small fw-bold text-muted">Check-in Time *</label>
+                    <input 
+                        type="time" 
+                        className="form-control rounded-3"
+                        value={checkInTime}
+                        onChange={(e) => setCheckInTime(e.target.value)}
+                    />
+                </div>
+                <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted">Check-out Date *</label>
                     <DatePicker 
                         selected={endDate} 
                         className={`form-control w-100 rounded-3 ${errors.dates ? 'is-invalid' : ''}`}
@@ -183,6 +225,15 @@ const BookingForm = ({ hotel, room, initialEmail, onSubmit }) => {
                         }} 
                     />
                     {errors.dates && <div className="invalid-feedback d-block">{errors.dates}</div>}
+                </div>
+                <div className="col-md-6">
+                    <label className="form-label small fw-bold text-muted">Check-out Time *</label>
+                    <input 
+                        type="time" 
+                        className="form-control rounded-3"
+                        value={checkOutTime}
+                        onChange={(e) => setCheckOutTime(e.target.value)}
+                    />
                 </div>
             </div>
 

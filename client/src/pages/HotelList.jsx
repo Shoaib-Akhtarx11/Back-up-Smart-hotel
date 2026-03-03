@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { selectFilteredHotels, resetFilters, fetchHotels } from "../redux/hotelSlice"; 
+import { fetchRoomsByHotel } from "../redux/roomSlice";
 import HotelCard from "../components/features/hotellist/HotelCard"; 
 import NavBar from "../components/layout/NavBar";
 import FilterNav from "../components/features/hotelList/FilterNav";
@@ -15,7 +16,13 @@ const HotelList = () => {
   const { loading, error } = useSelector((state) => state.hotels);
 
   useEffect(() => {
-    dispatch(fetchHotels());
+    // Pass filters to fetchHotels for server-side filtering
+    dispatch(fetchHotels(filters));
+  }, [dispatch, filters]);
+
+  // Fetch all rooms for price calculation
+  useEffect(() => {
+    dispatch(fetchRoomsByHotel());
   }, [dispatch]);
 
   const handleClearFilters = () => {

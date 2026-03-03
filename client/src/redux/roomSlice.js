@@ -3,7 +3,12 @@ import { createSlice, createAsyncThunk, createSelector } from '@reduxjs/toolkit'
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 export const fetchRoomsByHotel = createAsyncThunk('rooms/fetchRoomsByHotel', async (hotelId) => {
-  const res = await fetch(`${API_BASE}/api/rooms?HotelID=${hotelId}`, {
+  // If no hotelId is provided, fetch all rooms
+  const url = hotelId 
+    ? `${API_BASE}/api/rooms?HotelID=${hotelId}`
+    : `${API_BASE}/api/rooms`;
+  
+  const res = await fetch(url, {
     credentials: 'include'
   });
   const data = await res.json();
@@ -103,7 +108,11 @@ export const selectRoomsByHotel = (hotelId) =>
     [selectAllRoomsBase],
     (rooms) =>
       rooms.filter(
-        room => String(room.HotelID).toLowerCase() === String(hotelId).toLowerCase()
+        room => {
+          // Handle both cases: HotelID can be a string or an object with _id
+          const roomHotelId = room.HotelID?._id || room.HotelID;
+          return String(roomHotelId).toLowerCase() === String(hotelId).toLowerCase();
+        }
       )
   );
 export default roomSlice.reducer;

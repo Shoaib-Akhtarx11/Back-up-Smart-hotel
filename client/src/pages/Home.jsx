@@ -1,11 +1,24 @@
+import { useEffect } from "react"
+import { useDispatch } from "react-redux"
 import NavBar from "../components/layout/NavBar"
 import Hero from "../components/features/home/Hero"
 import Features from "../components/features/home/Features"
 import HotelPreview from "../components/features/home/HotelPreview"
 import Footer from "../components/layout/Footer"
 import hotelsImage from "../assets/hotels.png"
+import { fetchHotels } from "../redux/hotelSlice"
+import { fetchRoomsByHotel } from "../redux/roomSlice"
 
 const Home = () => {
+    const dispatch = useDispatch()
+
+    useEffect(() => {
+        // Fetch all hotels
+        dispatch(fetchHotels())
+        // Fetch all rooms for price display
+        dispatch(fetchRoomsByHotel())
+    }, [dispatch])
+
     return (
         <div>
             <Hero />

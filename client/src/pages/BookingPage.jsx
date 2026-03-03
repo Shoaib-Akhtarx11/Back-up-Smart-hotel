@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { createBooking } from "../redux/bookingSlice";
-
-import { updateRoomAvailability } from "../redux/roomSlice";
+import { createPayment } from "../redux/paymentSlice";
 import { selectAllHotels } from "../redux/hotelSlice";
 import { selectRoomsByHotel } from "../redux/roomSlice";
 import BookingForm from "../components/features/booking/BookingForm";
@@ -85,6 +84,7 @@ const BookingPage = () => {
       const pointsToEarn = Math.floor(priceCalculation.total / 100); // 1 point per $100 spent
       const bookingId = `BK-${Date.now()}`;
       const userId = currentUser?._id;
+      const paymentId = `PAY-${Date.now()}`;
 
       // Convert Date objects to ISO strings before dispatching
       const checkInDate = bookingSummary.checkIn instanceof Date 
@@ -101,31 +101,45 @@ const BookingPage = () => {
         HotelID: hotel._id,
         CheckInDate: checkInDate,
         CheckOutDate: checkOutDate,
+        CheckInTime: bookingSummary.checkInTime || '14:00',
+        CheckOutTime: bookingSummary.checkOutTime || '11:00',
         Status: 'pending',
         Amount: priceCalculation.total,
         PaymentMethod: 'Card'
       };
 
       // Dispatch createBooking async thunk from Redux
+      // The backend will: create booking, mark room as unavailable, and add loyalty points
       dispatch(createBooking(newBooking));
 
       // Record payment via API
-      dispatch(recordPayment({
+      dispatch(createPayment({
         UserID: userId,
         Amount: priceCalculation.total,
         Status: 'paid',
         PaymentMethod: 'Card'
       }));
 
-      // Update room availability
-      dispatch(updateRoomAvailability({
-        roomId: room._id,
-        availability: false
-      }));
-
-      navigate("/loyalty", {
+      // Navigate to success page with booking details
+      navigate("/booking-success", {
         replace: true,
-        state: { successMessage: `Booking Successful! You've earned ${pointsToEarn.toLocaleString()} points.` },
+        state: {
+          bookingData: {
+            bookingId: bookingId,
+            paymentId: paymentId,
+            hotelName: hotel.name,
+            roomType: room.type,
+            userName: currentUser?.Name || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim(),
+            userEmail: currentUser?.email,
+            checkInDate: checkInDate,
+            checkOutDate: checkOutDate,
+            checkInTime: bookingSummary.checkInTime || '14:00',
+            checkOutTime: bookingSummary.checkOutTime || '11:00',
+            nights: bookingSummary.nights || 1,
+            totalAmount: priceCalculation.total,
+            pointsEarned: pointsToEarn
+          }
+        }
       });
     } catch (error) {
       console.error("Post-payment processing failed:", error);
@@ -149,7 +163,8 @@ const BookingPage = () => {
                 <BookingForm
                   hotel={hotel}
                   room={room}
-                  initialEmail={currentUser?.email || ''}
+                  user={currentUser}
+                  initialEmail={currentUser?.email}
                   onSubmit={handleFormSubmit}
                 />
               </div>
