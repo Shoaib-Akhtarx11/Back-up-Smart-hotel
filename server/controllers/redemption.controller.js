@@ -2,9 +2,7 @@ import Redemption from '../models/redemption.model.js';
 import LoyaltyAccount from '../models/loyalty.model.js';
 import Booking from '../models/booking.model.js';
 
-// @desc    Redeem loyalty points for booking discount
-// @route   POST /api/redemptions
-// @access  Private (guest)
+
 export const createRedemption = async (req, res) => {
   try {
     const { BookingID, PointsUsed } = req.body;
@@ -13,20 +11,33 @@ export const createRedemption = async (req, res) => {
       return res.status(400).json({ success: false, message: 'BookingID and PointsUsed are required' });
     }
 
+    // Validate max redemption points (max 500 at once)
+    if (PointsUsed > 500) {
+      return res.status(400).json({ success: false, message: 'Maximum 500 redemption points can be used at once' });
+    }
+
     // Check loyalty account
     const account = await LoyaltyAccount.findOne({ UserID: req.user.id });
     if (!account) {
       return res.status(404).json({ success: false, message: 'Loyalty account not found' });
     }
-    if (account.PointsBalance < PointsUsed) {
-      return res.status(400).json({ success: false, message: 'Insufficient points. You have ' + account.PointsBalance + ' points' });
+    
+    // Use RedemptionPointsBalance (not regular PointsBalance)
+    if (account.RedemptionPointsBalance < PointsUsed) {
+      return res.status(400).json({ success: false, message: 'Insufficient redemption points. You have ' + account.RedemptionPointsBalance + ' redemption points' });
     }
 
     // Calculate discount (1 point = 10 rupees discount)
     const DiscountAmount = PointsUsed * 10;
 
-    // Deduct points
-    account.PointsBalance -= PointsUsed;
+    // Deduct redemption points and add to history
+    account.RedemptionPointsBalance -= PointsUsed;
+    account.History.push({
+      type: 'redeemed',
+      Points: PointsUsed,
+      Description: `Used ${PointsUsed} redemption points for booking discount`,
+      Date: new Date()
+    });
     account.LastUpdated = new Date();
     await account.save();
 

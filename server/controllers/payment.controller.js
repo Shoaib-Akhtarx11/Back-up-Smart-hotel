@@ -1,6 +1,8 @@
+
 import Payment from '../models/payment.model.js';
 import Booking from '../models/booking.model.js';
 import LoyaltyAccount from '../models/loyalty.model.js';
+import Redemption from '../models/redemption.model.js';
 
 // @desc    Create payment (simplified - no real gateway)
 // @route   POST /api/payments
@@ -21,7 +23,11 @@ export const createPayment = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
 
-    // Create payment record
+    // Get the redemption discount from booking
+    const redemptionDiscountAmount = booking.RedemptionDiscountAmount || 0;
+    const redemptionPointsUsed = booking.RedemptionPointsUsed || 0;
+
+    // Create payment record with actual amount after discount
     const payment = await Payment.create({
       UserID: req.user.id,
       BookingID,
@@ -34,9 +40,38 @@ export const createPayment = async (req, res) => {
     // Update booking status to success
     booking.Status = 'success';
     booking.PaymentID = payment._id;
+    
+    // Process redemption if points were used
+    if (redemptionPointsUsed > 0) {
+      // Deduct redemption points from user's account
+      let loyaltyAccount = await LoyaltyAccount.findOne({ UserID: req.user.id });
+      if (loyaltyAccount && loyaltyAccount.RedemptionPointsBalance >= redemptionPointsUsed) {
+        loyaltyAccount.RedemptionPointsBalance -= redemptionPointsUsed;
+        loyaltyAccount.History.push({
+          type: 'redeemed',
+          Points: redemptionPointsUsed,
+          Description: `Used ${redemptionPointsUsed} redemption points for booking discount`,
+          Date: new Date()
+        });
+        loyaltyAccount.LastUpdated = new Date();
+        await loyaltyAccount.save();
+
+        // Create redemption record
+        const redemption = await Redemption.create({
+          UserID: req.user.id,
+          BookingID: booking._id,
+          PointsUsed: redemptionPointsUsed,
+          DiscountAmount: redemptionDiscountAmount,
+          CreatedAt: new Date(),
+        });
+
+        // Link redemption to booking
+        booking.RedemptionID = redemption._id;
+      }
+    }
     await booking.save();
 
-    // Add random loyalty points (1-500) for booking
+    // Add random loyalty points (1-500) for booking (based on actual paid amount)
     const pointsEarned = Math.floor(Math.random() * 500) + 1;
     let loyalty = await LoyaltyAccount.findOne({ UserID: req.user.id });
     if (!loyalty) {
@@ -68,7 +103,9 @@ export const createPayment = async (req, res) => {
       success: true,
       data: payment,
       pointsEarned,
-      message: `Payment successful! Booking confirmed. You earned ${pointsEarned} loyalty points`,
+      redemptionUsed: redemptionPointsUsed,
+      redemptionDiscount: redemptionDiscountAmount,
+      message: `Payment successful! Booking confirmed. You earned ${pointsEarned} loyalty points${redemptionPointsUsed > 0 ? ` and used ${redemptionPointsUsed} redemption points for ₹${redemptionDiscountAmount} discount` : ''}`,
     });
   } catch (error) {
     console.error('Create payment error:', error);
@@ -149,3 +186,4 @@ export const refundPayment = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
+

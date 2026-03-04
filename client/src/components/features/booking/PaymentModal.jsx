@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
-import { FaCreditCard, FaUniversity, FaWallet, FaMobileAlt, FaCheck, FaArrowLeft } from 'react-icons/fa';
+import { FaCreditCard, FaUniversity, FaWallet, FaMobileAlt, FaCheck, FaArrowLeft, FaGift } from 'react-icons/fa';
 
-const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect }) => {
+const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect, redemptionPointsBalance = 0, onRedemptionChange }) => {
   const [step, setStep] = useState('method'); // 'method' -> 'form' -> 'confirm'
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [formData, setFormData] = useState({
@@ -16,8 +17,52 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
     phoneNumber: '',
   });
   const [formErrors, setFormErrors] = useState({});
+  const [redemptionPoints, setRedemptionPoints] = useState(0);
+  const [redemptionError, setRedemptionError] = useState('');
 
-  const pointsToEarn = Math.floor((bookingDetails?.total || 0) / 10);
+  // Calculate redemption discount (1 point = 1 rupee)
+  const redemptionDiscount = redemptionPoints;
+  
+  // Calculate final total after redemption discount
+  const finalTotal = (bookingDetails?.total || 0) - redemptionDiscount;
+  
+  // Ensure finalTotal doesn't go below 0
+  const actualFinalTotal = finalTotal > 0 ? finalTotal : 0;
+  
+  const pointsToEarn = Math.floor(actualFinalTotal / 100);
+
+  // Handle redemption points change
+  const handleRedemptionChange = (e) => {
+    const value = parseInt(e.target.value) || 0;
+    
+    if (value < 0) {
+      setRedemptionError('Points cannot be negative');
+      return;
+    }
+    
+    if (value > 500) {
+      setRedemptionError('Maximum 500 redemption points can be used at once');
+      return;
+    }
+    
+    if (value > redemptionPointsBalance) {
+      setRedemptionError(`You only have ${redemptionPointsBalance} redemption points`);
+      return;
+    }
+    
+    if (value > actualFinalTotal) {
+      setRedemptionError('Discount cannot exceed total amount');
+      return;
+    }
+    
+    setRedemptionError('');
+    setRedemptionPoints(value);
+    
+    // Notify parent component
+    if (onRedemptionChange) {
+      onRedemptionChange(value);
+    }
+  };
 
   const paymentMethods = [
     {
@@ -125,9 +170,14 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
   };
 
   const handleConfirmPayment = () => {
-    onConfirm();
+    // Pass redemption points to parent
+    if (onRedemptionChange) {
+      onRedemptionChange(redemptionPoints);
+    }
+    onConfirm(redemptionPoints);
     setStep('method');
     setSelectedMethod(null);
+    setRedemptionPoints(0);
   };
 
   const getMethodIcon = (methodId) => {
@@ -161,12 +211,49 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
                 <span className="text-muted">Tax (12%):</span>
                 <span>₹{(bookingDetails?.tax || 0).toLocaleString()}</span>
               </div>
+              {redemptionDiscount > 0 && (
+                <div className="d-flex justify-content-between mb-2 text-success">
+                  <span>Redemption Discount:</span>
+                  <span>-₹{redemptionDiscount.toLocaleString()}</span>
+                </div>
+              )}
               <hr className="my-2" />
               <div className="d-flex justify-content-between fw-bold">
                 <span>Total Amount:</span>
-                <span className="text-primary">₹{(bookingDetails?.total || 0).toLocaleString()}</span>
+                <span className="text-primary">₹{actualFinalTotal.toLocaleString()}</span>
               </div>
             </div>
+
+            {/* Redemption Points Section */}
+            {redemptionPointsBalance > 0 && (
+              <div className="bg-warning bg-opacity-10 border border-warning rounded-3 p-3 mb-4">
+                <div className="d-flex align-items-center mb-3">
+                  <FaGift className="text-warning fs-4 me-2" />
+                  <div>
+                    <h6 className="mb-0 fw-bold">Use Redemption Points</h6>
+                    <small className="text-muted">You have {redemptionPointsBalance} redemption points available</small>
+                  </div>
+                </div>
+                <Form.Group>
+                  <Form.Label className="small fw-bold text-muted">Enter points to redeem (max 500):</Form.Label>
+                  <Form.Control
+                    type="number"
+                    placeholder="0"
+                    value={redemptionPoints || ''}
+                    onChange={handleRedemptionChange}
+                    max={500}
+                    min={0}
+                    className="rounded-2"
+                  />
+                  {redemptionError && <Form.Text className="text-danger">{redemptionError}</Form.Text>}
+                  <div className="mt-2">
+                    <small className="text-muted">
+                      1 point = ₹1 discount. Max 500 points per booking.
+                    </small>
+                  </div>
+                </Form.Group>
+              </div>
+            )}
 
             {/* Payment Methods Grid */}
             <p className="small text-muted mb-3">Choose your preferred payment method:</p>
@@ -227,7 +314,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
             <div className="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
               <div className="text-primary me-3">{getMethodIcon(selectedMethod)}</div>
               <div>
-                <div className="small text-muted">Payment Method</div>
+                <div className="small text-muted"> Payment Method</div>
                 <div className="fw-bold">{getMethodName(selectedMethod)}</div>
               </div>
             </div>
@@ -420,8 +507,14 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
             <div className="bg-light rounded-3 p-3 mt-4">
               <div className="d-flex justify-content-between fw-bold">
                 <span>Amount to Pay:</span>
-                <span className="text-primary">₹{(bookingDetails?.total || 0).toLocaleString()}</span>
+                <span className="text-primary">₹{actualFinalTotal.toLocaleString()}</span>
               </div>
+              {redemptionDiscount > 0 && (
+                <div className="d-flex justify-content-between text-success mt-2">
+                  <small>Redemption Discount Applied:</small>
+                  <small>-₹{redemptionDiscount.toLocaleString()}</small>
+                </div>
+              )}
             </div>
           </Modal.Body>
           <Modal.Footer className="border-0 pt-0">
@@ -466,10 +559,16 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
                 <span className="text-muted">Tax (12%):</span>
                 <span>₹{(bookingDetails?.tax || 0).toLocaleString()}</span>
               </div>
+              {redemptionDiscount > 0 && (
+                <div className="d-flex justify-content-between mb-3 text-success">
+                  <span>Redemption Discount:</span>
+                  <span>-₹{redemptionDiscount.toLocaleString()}</span>
+                </div>
+              )}
               <hr className="my-2" />
               <div className="d-flex justify-content-between fw-bold">
                 <span>Total Amount:</span>
-                <span className="text-primary">₹{(bookingDetails?.total || 0).toLocaleString()}</span>
+                <span className="text-primary">₹{actualFinalTotal.toLocaleString()}</span>
               </div>
             </div>
 
@@ -488,6 +587,11 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
                 <div>
                   <small className="text-muted">Loyalty Points</small>
                   <div className="fw-bold text-success">You will earn {pointsToEarn} points</div>
+                  {redemptionPoints > 0 && (
+                    <div className="text-warning small mt-1">
+                      Using {redemptionPoints} redemption points for ₹{redemptionDiscount} discount
+                    </div>
+                  )}
                 </div>
                 <div className="fs-5">⭐</div>
               </div>
@@ -516,7 +620,7 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
               className="rounded-pill px-4 fw-bold"
             >
               <FaCheck className="me-2" />
-              Confirm & Pay
+              Confirm & Pay ₹{actualFinalTotal.toLocaleString()}
             </Button>
           </Modal.Footer>
         </>
@@ -526,3 +630,4 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect 
 };
 
 export default PaymentModal;
+

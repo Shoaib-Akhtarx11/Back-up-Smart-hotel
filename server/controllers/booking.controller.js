@@ -7,11 +7,16 @@ import LoyaltyAccount from '../models/loyalty.model.js';
 // @access  Private (guest)
 export const createBooking = async (req, res) => {
   try {
-    const { RoomID, CheckInDate, CheckOutDate, NumberOfRooms, Status, Amount, PaymentMethod } = req.body;
+    const { RoomID, CheckInDate, CheckOutDate, NumberOfRooms, Status, Amount, PaymentMethod, RedemptionPointsUsed } = req.body;
     const numberOfRooms = NumberOfRooms || 1;
 
     if (!RoomID || !CheckInDate || !CheckOutDate) {
       return res.status(400).json({ success: false, message: 'RoomID, CheckInDate and CheckOutDate are required' });
+    }
+
+    // Validate redemption points if provided
+    if (RedemptionPointsUsed && RedemptionPointsUsed > 500) {
+      return res.status(400).json({ success: false, message: 'Maximum 500 redemption points can be used at once' });
     }
 
     const room = await Room.findById(RoomID);
@@ -22,6 +27,9 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Room is not available' });
     }
 
+    // Calculate redemption discount (1 point = 10 rupees)
+    const redemptionDiscountAmount = RedemptionPointsUsed ? RedemptionPointsUsed * 10 : 0;
+
     // Create booking with pending status
     const booking = await Booking.create({
       UserID: req.user.id,
@@ -29,7 +37,9 @@ export const createBooking = async (req, res) => {
       NumberOfRooms: numberOfRooms,
       CheckInDate,
       CheckOutDate,
-      Status: 'pending'
+      Status: 'pending',
+      RedemptionPointsUsed: RedemptionPointsUsed || 0,
+      RedemptionDiscountAmount: redemptionDiscountAmount
     });
 
     // Note: Loyalty points are added in the payment controller when payment is confirmed

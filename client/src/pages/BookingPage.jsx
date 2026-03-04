@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -5,6 +6,7 @@ import { createBooking } from "../redux/bookingSlice";
 import { createPayment } from "../redux/paymentSlice";
 import { selectAllHotels } from "../redux/hotelSlice";
 import { selectRoomsByHotel } from "../redux/roomSlice";
+import { fetchUserLoyalty, selectRedemptionPoints } from "../redux/loyaltySlice";
 import BookingForm from "../components/features/booking/BookingForm";
 import PaymentModal from "../components/features/booking/PaymentModal";
 import NavBar from "../components/layout/NavBar";
@@ -20,6 +22,7 @@ const BookingPage = () => {
   const auth = useSelector((state) => state.auth || {});
   const currentUser = auth.user;
   const isAuthenticated = auth.isAuthenticated;
+  const redemptionPointsBalance = useSelector(selectRedemptionPoints);
 
   const [hotel, setHotel] = useState(null);
   const [room, setRoom] = useState(null);
@@ -27,20 +30,23 @@ const BookingPage = () => {
   const [showPayment, setShowPayment] = useState(false);
   const [bookingSummary, setBookingSummary] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [redemptionPointsUsed, setRedemptionPointsUsed] = useState(0);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchUserLoyalty());
+    }
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    
-    // CHECK LOGIN PROTECTION - redirect early if not authenticated
     if (!isAuthenticated) {
       navigate("/login", { 
         state: { redirectTo: `/booking/${hotelId}/${roomId}`, message: "Please login to book a hotel" } 
       });
-      return;
     }
   }, [isAuthenticated, hotelId, roomId, navigate]);
 
-  // Separate effect for loading hotel and room data
   useEffect(() => {
     try {
       const foundHotel = allHotels.find((h) => String(h._id) === String(hotelId));
@@ -60,7 +66,6 @@ const BookingPage = () => {
       console.error("Booking initialization error:", err);
       navigate("/error", { state: { message: "Unable to initialize the secure booking environment." } });
     }
-    // Only depend on IDs, not array references which get recreated
   }, [hotelId, roomId, allHotels.length, roomsByHotel.length, navigate]);
 
   const priceCalculation = useMemo(() => {
@@ -69,8 +74,10 @@ const BookingPage = () => {
     const numberOfRooms = bookingSummary?.numberOfRooms || 1;
     const base = room.Price * nights * numberOfRooms;
     const tax = base * 0.12;
-    return { base, tax, total: base + tax, numberOfRooms, nights };
-  }, [room, bookingSummary]);
+    const redemptionDiscount = redemptionPointsUsed;
+    const total = base + tax - redemptionDiscount;
+    return { base, tax, total: total > 0 ? total : 0, numberOfRooms, nights, redemptionDiscount };
+  }, [room, bookingSummary, redemptionPointsUsed]);
 
   const handleFormSubmit = useCallback((formData) => {
     setBookingSummary(formData);
@@ -79,15 +86,16 @@ const BookingPage = () => {
     }
   }, []);
 
-  const handlePaymentConfirm = useCallback(async () => {
+  const handleRedemptionChange = useCallback((points) => {
+    setRedemptionPointsUsed(points);
+  }, []);
+
+  const handlePaymentConfirm = useCallback(async (usedRedemptionPoints = 0) => {
     try {
       setShowPayment(false);
-      // 1 point per rupee of total booking amount
       const pointsToEarn = Math.floor(priceCalculation.total / 100);
       const userId = currentUser?._id;
-      const paymentId = `PAY-${Date.now()}`;
 
-      // Convert Date objects to ISO strings before dispatching
       const checkInDate = bookingSummary.checkIn instanceof Date 
         ? bookingSummary.checkIn.toISOString() 
         : String(bookingSummary.checkIn);
@@ -95,7 +103,8 @@ const BookingPage = () => {
         ? bookingSummary.checkOut.toISOString() 
         : String(bookingSummary.checkOut);
 
-      // Step 1: Create booking with pending status
+      const redemptionDiscount = usedRedemptionPoints;
+
       const newBooking = {
         UserID: userId,
         RoomID: room._id,
@@ -104,17 +113,14 @@ const BookingPage = () => {
         CheckInDate: checkInDate,
         CheckOutDate: checkOutDate,
         CheckInTime: bookingSummary.checkInTime || '14:00',
-        CheckOutTime: bookingSummary.checkOutTime || '11:00'
+        CheckOutTime: bookingSummary.checkOutTime || '11:00',
+        RedemptionPointsUsed: usedRedemptionPoints,
+        RedemptionDiscountAmount: redemptionDiscount
       };
 
-      // Create booking - gets MongoDB ObjectId with status='pending'
       const bookingResult = await dispatch(createBooking(newBooking)).unwrap();
-      
-      // Get the created booking's MongoDB ObjectId
       const savedBookingId = bookingResult._id;
 
-      // Step 2: Process payment with the booking ID
-      // Map the method ID to a display name
       const paymentMethodNames = {
         'card': 'Credit/Debit Card',
         'bank': 'Bank Transfer',
@@ -131,7 +137,6 @@ const BookingPage = () => {
         PaymentMethod: paymentMethodName
       })).unwrap();
 
-      // Step 3: Navigate to success page (booking status will be 'success' in DB)
       navigate("/booking-success", {
         replace: true,
         state: {
@@ -149,7 +154,9 @@ const BookingPage = () => {
             nights: bookingSummary.nights || 1,
             numberOfRooms: bookingSummary.numberOfRooms || 1,
             totalAmount: priceCalculation.total,
-            pointsEarned: pointsToEarn
+            pointsEarned: pointsToEarn,
+            redemptionPointsUsed: usedRedemptionPoints,
+            redemptionDiscount: redemptionDiscount
           }
         }
       });
@@ -157,7 +164,7 @@ const BookingPage = () => {
       console.error("Post-payment processing failed:", error);
       navigate("/error", { state: { message: "Payment processed, but we couldn't save your booking." } });
     }
-  }, [bookingSummary, priceCalculation, hotel, room, currentUser, dispatch, navigate, selectedPaymentMethod]);
+  }, [bookingSummary, priceCalculation, hotel, room, currentUser, dispatch, navigate, selectedPaymentMethod, redemptionPointsUsed]);
 
   if (loading) return <div className="text-center py-5 mt-5"><div className="spinner-border text-primary"></div></div>;
 
@@ -191,13 +198,19 @@ const BookingPage = () => {
                 {room && <p className="text-muted mb-3">{room.type}</p>}
                 <hr />
                 <div className="d-flex justify-content-between mb-2">
-                  <span>₹{room?.Price.toLocaleString()} × {bookingSummary?.nights || 1} nights × {priceCalculation.numberOfRooms || 1} rooms:</span>
+                  <span>₹{room?.Price.toLocaleString()} x {bookingSummary?.nights || 1} nights x {priceCalculation.numberOfRooms || 1} rooms:</span>
                   <span>₹{priceCalculation.base.toLocaleString()}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-3">
                   <span>Tax (12%):</span>
                   <span>₹{priceCalculation.tax.toLocaleString()}</span>
                 </div>
+                {redemptionPointsUsed > 0 && (
+                  <div className="d-flex justify-content-between mb-3 text-success">
+                    <span>Redemption Discount:</span>
+                    <span>-₹{redemptionPointsUsed.toLocaleString()}</span>
+                  </div>
+                )}
                 <hr />
                 <div className="d-flex justify-content-between fw-bold">
                   <span>Total Amount:</span>
@@ -215,6 +228,8 @@ const BookingPage = () => {
         bookingDetails={priceCalculation}
         onConfirm={handlePaymentConfirm}
         onMethodSelect={setSelectedPaymentMethod}
+        redemptionPointsBalance={redemptionPointsBalance}
+        onRedemptionChange={handleRedemptionChange}
       />
       <Footer />
     </div>

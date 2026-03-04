@@ -39,6 +39,22 @@ const BookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Payment',
     },
+    // Redemption points fields
+    RedemptionPointsUsed: {
+      type: Number,
+      default: 0,
+      min: [0, 'Redemption points cannot be negative'],
+      max: [500, 'Maximum 500 redemption points can be used at once'],
+    },
+    RedemptionDiscountAmount: {
+      type: Number,
+      default: 0,
+      min: [0, 'Discount amount cannot be negative'],
+    },
+    RedemptionID: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Redemption',
+    },
   },
   { timestamps: true }
 );
