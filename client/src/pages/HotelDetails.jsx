@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
 import RoomList from "../components/features/hotel/RoomList";
-import ReviewSection from "../components/features/hotellist/ReviewSection";
+import ReviewSection from "../components/features/hotelList/ReviewSection";
 
 // Redux Actions & Selectors
 import { addToRecentVisits } from "../redux/userSlice";

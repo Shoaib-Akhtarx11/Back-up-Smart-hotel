@@ -10,7 +10,17 @@ export const fetchReviews = createAsyncThunk('reviews/fetchReviews', async () =>
   if (!data.success) {
     throw new Error(data.message || 'Failed to fetch reviews');
   }
-  return data.data;
+  // Transform server data to match frontend expectations
+  return data.data.map(review => ({
+    id: review._id,
+    hotelId: review.HotelID,
+    rating: review.Rating,
+    comment: review.Comment,
+    reviewDate: review.Timestamp,
+    guestName: review.UserID?.Name || 'Anonymous',
+    managerReply: review.managerReply,
+    repliedAt: review.repliedAt
+  }));
 });
 
 export const createReview = createAsyncThunk('reviews/createReview', async (reviewData) => {
@@ -24,7 +34,18 @@ export const createReview = createAsyncThunk('reviews/createReview', async (revi
   if (!data.success) {
     throw new Error(data.message || 'Failed to create review');
   }
-  return data.data;
+  // Transform server response to match frontend expectations
+  const review = data.data;
+  return {
+    id: review._id,
+    hotelId: review.HotelID,
+    rating: review.Rating,
+    comment: review.Comment,
+    reviewDate: review.Timestamp,
+    guestName: review.UserID?.Name || 'Anonymous',
+    managerReply: review.managerReply,
+    repliedAt: review.repliedAt
+  };
 });
 
 export const deleteReview = createAsyncThunk('reviews/deleteReview', async (reviewId) => {

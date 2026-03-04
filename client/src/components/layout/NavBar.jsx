@@ -15,7 +15,8 @@ const NavBar = ({ isHomePage = false }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { isAuthenticated, role } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const role = user?.role || user?.Role || "guest";
 
   const handleLogout = () => {
     dispatch(logout());
@@ -155,7 +156,7 @@ const NavBar = ({ isHomePage = false }) => {
                             <li className="fw-bold px-2 pt-2 small text-muted">MY BOOKINGS</li>
                             <li>
                               <Link
-                                to="/account"
+                                to="/account?tab=bookings"
                                 className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
                                 onClick={() => setIsDropdownOpen(false)}
                               >
@@ -171,7 +172,7 @@ const NavBar = ({ isHomePage = false }) => {
                             <li className="fw-bold px-2 pt-2 small text-muted">MY POINTS</li>
                             <li>
                               <Link
-                                to="/loyalty"
+                                to="/account?tab=loyalty"
                                 className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
                                 onClick={() => setIsDropdownOpen(false)}
                               >

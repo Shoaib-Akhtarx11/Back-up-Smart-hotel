@@ -13,7 +13,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminReviewDashboard from "./pages/AdminReviewDashboard";
 import AddHotel from "./pages/AddHotel";
 import ReviewManagement from "./pages/ReviewManagement";
-import LoyaltyPage from "./pages/LoyaltyPage";
 import RecentVisit from "./pages/RecentVisit";
 import UserAccount from "./pages/UserAccount";
 import BookingSuccess from "./pages/BookingSuccess";
@@ -47,11 +46,6 @@ const App = () => {
         <Route path="/account" element={
           <ProtectedRoute allowedRoles={['guest', 'manager', 'admin']}>
             <UserAccount />
-          </ProtectedRoute>
-        } />
-        <Route path="/loyalty" element={
-          <ProtectedRoute allowedRoles={['guest', 'manager', 'admin']}>
-            <LoyaltyPage />
           </ProtectedRoute>
         } />
         <Route path="/recentvisit" element={

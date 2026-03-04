@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
@@ -14,6 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600';
 const UserAccount = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
   
   const auth = useSelector((state) => state.auth);
   const currentUser = auth.user;
@@ -34,6 +35,14 @@ const UserAccount = () => {
     city: "",
     country: "",
   });
+
+  // Handle tab query parameter from URL
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['profile', 'bookings', 'loyalty'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isAuthenticated) {

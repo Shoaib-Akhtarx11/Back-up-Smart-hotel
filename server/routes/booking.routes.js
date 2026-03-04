@@ -15,11 +15,11 @@ router.route('/')
   .get(protect, getBookings)
   .post(protect, authorize('guest'), createBooking);
 
+// Route for users to cancel their own bookings - must be defined BEFORE /:id route
+router.put('/:id/cancel', cancelBooking);
+
 // New route for getting booking details with full information
 router.get('/:id/details', protect, getBookingDetails);
-
-// Route for users to cancel their own bookings
-router.delete('/:id/cancel', protect, cancelBooking);
 
 router.route('/:id')
   .get(protect, getBooking)

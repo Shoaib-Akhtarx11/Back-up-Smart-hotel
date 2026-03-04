@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { selectHotelReviews } from '../../../redux/reviewSlice';
+import { selectHotelReviews, fetchReviews, createReview } from '../../../redux/reviewSlice';
 import { FaStar } from 'react-icons/fa';
 import './ReviewSection.css';
 
@@ -23,7 +23,12 @@ const ReviewSection = ({ hotelId, hotelName }) => {
   const [submitMessage, setSubmitMessage] = useState('');
   const [expandedReviewId, setExpandedReviewId] = useState(null);
 
-  const handleSubmitReview = (e) => {
+  // Fetch reviews on mount
+  useEffect(() => {
+    dispatch(fetchReviews());
+  }, [dispatch]);
+
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
     
     if (!isAuthenticated) {
@@ -46,30 +51,26 @@ const ReviewSection = ({ hotelId, hotelName }) => {
     setIsSubmitting(true);
 
     try {
-      const newReview = {
-        userId: currentUser?.id,
-        guestName: currentUser?.name || 'Guest',
-        hotelId: hotelId,
-        hotelName: hotelName,
-        rating: rating,
-        comment: comment.trim(),
-        reviewDate: new Date().toISOString(),
-        managerReply: null,
-        repliedAt: null,
-        managerId: null,
-        responses: []
+      // Send review to backend with correct format matching server expectations
+      const reviewData = {
+        HotelID: hotelId,
+        Rating: rating,
+        Comment: comment.trim()
       };
 
-      dispatch(addReview(newReview));
+      await dispatch(createReview(reviewData)).unwrap();
 
       setRating(0);
       setComment('');
       setSubmitMessage('✓ Review posted successfully!');
 
+      // Refresh reviews after posting
+      dispatch(fetchReviews());
+
       setTimeout(() => setSubmitMessage(''), 3000);
     } catch (error) {
       console.error('Error submitting review:', error);
-      setSubmitMessage('Error submitting review. Please try again.');
+      setSubmitMessage(error.message || 'Error submitting review. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

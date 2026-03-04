@@ -193,7 +193,7 @@ const UserBookings = ({ bookings: propBookings, loading: propLoading, onBookingC
     setCancelLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/bookings/${selectedBooking._id}/cancel`, {
-        method: 'DELETE',
+        method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

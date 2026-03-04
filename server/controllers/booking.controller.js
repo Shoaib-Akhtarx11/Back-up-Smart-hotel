@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import Booking from '../models/booking.model.js';
 import Room from '../models/room.model.js';
 import LoyaltyAccount from '../models/loyalty.model.js';
@@ -130,10 +131,27 @@ export const updateBooking = async (req, res) => {
 };
 
 // @desc    Cancel booking
-// @route   DELETE /api/bookings/:id
-// @access  Private
+// @route   PUT /api/bookings/:id/cancel
+// @access  Private (user can cancel their own booking)
 export const cancelBooking = async (req, res) => {
   try {
+    // Extract user from token manually
+    let user = null;
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smart_hotel_booking_system');
+        user = { id: decoded.id, role: decoded.role };
+      } catch (err) {
+        return res.status(401).json({ success: false, message: 'Invalid token' });
+      }
+    }
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Not authorized' });
+    }
+
     const booking = await Booking.findById(req.params.id)
       .populate('RoomID')
       .populate('UserID', 'Name Email');
@@ -143,7 +161,7 @@ export const cancelBooking = async (req, res) => {
     }
     
     // Check if user is authorized (owner or admin)
-    if (req.user.role !== 'admin' && booking.UserID.toString() !== req.user.id) {
+    if (user.role !== 'admin' && booking.UserID.toString() !== user.id) {
       return res.status(403).json({ success: false, message: 'Not authorized to cancel this booking' });
     }
 
