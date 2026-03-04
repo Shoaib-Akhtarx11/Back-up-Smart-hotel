@@ -41,6 +41,25 @@ const UserSchema = new mongoose.Schema(
       required: [true, 'Please provide a contact number'],
       match: [/^\d{10}$/, 'Contact number must be 10 digits'],
     },
+    Address: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    City: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    Country: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    DateOfBirth: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

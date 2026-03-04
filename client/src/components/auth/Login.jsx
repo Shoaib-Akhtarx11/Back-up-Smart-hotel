@@ -112,7 +112,12 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        const { user } = data;
+        const { user, token } = data;
+
+        // Save token to localStorage for API requests
+        if (token) {
+          localStorage.setItem('token', token);
+        }
 
         dispatch(login({ user }));
 

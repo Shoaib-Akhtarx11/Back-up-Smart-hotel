@@ -6,7 +6,8 @@ import {
   getAllUsers,
   updateProfile, 
   changePassword,
-  getMe
+  getMe,
+  getUserAccountData
 } from '../controllers/auth.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
@@ -19,6 +20,9 @@ router.post('/logout', logout);
 
 // Protected routes - Get current user
 router.get('/me', protect, getMe);
+
+// Protected routes - Get user account data with bookings (using aggregation)
+router.get('/account-data', protect, getUserAccountData);
 
 // Protected routes - Admin only
 router.get('/users', protect, authorize('admin'), getAllUsers);

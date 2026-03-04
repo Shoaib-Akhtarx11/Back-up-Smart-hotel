@@ -31,22 +31,35 @@ export const createPayment = async (req, res) => {
       CreatedAt: new Date(),
     });
 
-    // Update booking status to confirmed
-    booking.Status = 'confirmed';
+    // Update booking status to success
+    booking.Status = 'success';
     booking.PaymentID = payment._id;
     await booking.save();
 
-    // Add loyalty points (1 point per 100 rupees)
-    const pointsEarned = Math.floor(Amount / 100);
+    // Add random loyalty points (1-500) for booking
+    const pointsEarned = Math.floor(Math.random() * 500) + 1;
     let loyalty = await LoyaltyAccount.findOne({ UserID: req.user.id });
     if (!loyalty) {
       loyalty = await LoyaltyAccount.create({
         UserID: req.user.id,
         PointsBalance: pointsEarned,
+        RedemptionPointsBalance: 0,
+        History: [{
+          type: 'earned',
+          Points: pointsEarned,
+          Description: 'Loyalty points earned from hotel booking',
+          Date: new Date()
+        }],
         LastUpdated: new Date(),
       });
     } else {
       loyalty.PointsBalance += pointsEarned;
+      loyalty.History.push({
+        type: 'earned',
+        Points: pointsEarned,
+        Description: 'Loyalty points earned from hotel booking',
+        Date: new Date()
+      });
       loyalty.LastUpdated = new Date();
       await loyalty.save();
     }

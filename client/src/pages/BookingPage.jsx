@@ -26,6 +26,7 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [showPayment, setShowPayment] = useState(false);
   const [bookingSummary, setBookingSummary] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -65,9 +66,10 @@ const BookingPage = () => {
   const priceCalculation = useMemo(() => {
     if (!room) return { base: 0, tax: 0, total: 0 };
     const nights = bookingSummary?.nights || 1;
-    const base = room.Price * nights;
+    const numberOfRooms = bookingSummary?.numberOfRooms || 1;
+    const base = room.Price * nights * numberOfRooms;
     const tax = base * 0.12;
-    return { base, tax, total: base + tax };
+    return { base, tax, total: base + tax, numberOfRooms, nights };
   }, [room, bookingSummary]);
 
   const handleFormSubmit = useCallback((formData) => {
@@ -77,12 +79,11 @@ const BookingPage = () => {
     }
   }, []);
 
-  const handlePaymentConfirm = useCallback(() => {
+  const handlePaymentConfirm = useCallback(async () => {
     try {
       setShowPayment(false);
       // 1 point per rupee of total booking amount
-      const pointsToEarn = Math.floor(priceCalculation.total / 100); // 1 point per $100 spent
-      const bookingId = `BK-${Date.now()}`;
+      const pointsToEarn = Math.floor(priceCalculation.total / 100);
       const userId = currentUser?._id;
       const paymentId = `PAY-${Date.now()}`;
 
@@ -94,39 +95,49 @@ const BookingPage = () => {
         ? bookingSummary.checkOut.toISOString() 
         : String(bookingSummary.checkOut);
 
+      // Step 1: Create booking with pending status
       const newBooking = {
-        BookingID: bookingId,
         UserID: userId,
         RoomID: room._id,
         HotelID: hotel._id,
+        NumberOfRooms: bookingSummary.numberOfRooms || 1,
         CheckInDate: checkInDate,
         CheckOutDate: checkOutDate,
         CheckInTime: bookingSummary.checkInTime || '14:00',
-        CheckOutTime: bookingSummary.checkOutTime || '11:00',
-        Status: 'pending',
-        Amount: priceCalculation.total,
-        PaymentMethod: 'Card'
+        CheckOutTime: bookingSummary.checkOutTime || '11:00'
       };
 
-      // Dispatch createBooking async thunk from Redux
-      // The backend will: create booking, mark room as unavailable, and add loyalty points
-      dispatch(createBooking(newBooking));
+      // Create booking - gets MongoDB ObjectId with status='pending'
+      const bookingResult = await dispatch(createBooking(newBooking)).unwrap();
+      
+      // Get the created booking's MongoDB ObjectId
+      const savedBookingId = bookingResult._id;
 
-      // Record payment via API
-      dispatch(createPayment({
+      // Step 2: Process payment with the booking ID
+      // Map the method ID to a display name
+      const paymentMethodNames = {
+        'card': 'Credit/Debit Card',
+        'bank': 'Bank Transfer',
+        'upi': 'UPI',
+        'netbanking': 'Net Banking'
+      };
+      const paymentMethodName = paymentMethodNames[selectedPaymentMethod] || 'Credit/Debit Card';
+      
+      const paymentResult = await dispatch(createPayment({
+        BookingID: savedBookingId,
         UserID: userId,
         Amount: priceCalculation.total,
         Status: 'paid',
-        PaymentMethod: 'Card'
-      }));
+        PaymentMethod: paymentMethodName
+      })).unwrap();
 
-      // Navigate to success page with booking details
+      // Step 3: Navigate to success page (booking status will be 'success' in DB)
       navigate("/booking-success", {
         replace: true,
         state: {
           bookingData: {
-            bookingId: bookingId,
-            paymentId: paymentId,
+            bookingId: savedBookingId,
+            paymentId: paymentResult._id,
             hotelName: hotel.name,
             roomType: room.type,
             userName: currentUser?.Name || `${currentUser?.firstName || ''} ${currentUser?.lastName || ''}`.trim(),
@@ -136,6 +147,7 @@ const BookingPage = () => {
             checkInTime: bookingSummary.checkInTime || '14:00',
             checkOutTime: bookingSummary.checkOutTime || '11:00',
             nights: bookingSummary.nights || 1,
+            numberOfRooms: bookingSummary.numberOfRooms || 1,
             totalAmount: priceCalculation.total,
             pointsEarned: pointsToEarn
           }
@@ -145,7 +157,7 @@ const BookingPage = () => {
       console.error("Post-payment processing failed:", error);
       navigate("/error", { state: { message: "Payment processed, but we couldn't save your booking." } });
     }
-  }, [bookingSummary, priceCalculation, hotel, room, currentUser, dispatch, navigate]);
+  }, [bookingSummary, priceCalculation, hotel, room, currentUser, dispatch, navigate, selectedPaymentMethod]);
 
   if (loading) return <div className="text-center py-5 mt-5"><div className="spinner-border text-primary"></div></div>;
 
@@ -169,9 +181,6 @@ const BookingPage = () => {
                 />
               </div>
             </div>
-
-            {/* Reviews Section - REMOVED (Now in HotelDetails Page) */}
-            {/* Reviews have been moved to the HotelDetails page for better UX */}
           </div>
 
           <div className="col-lg-4">
@@ -182,7 +191,7 @@ const BookingPage = () => {
                 {room && <p className="text-muted mb-3">{room.type}</p>}
                 <hr />
                 <div className="d-flex justify-content-between mb-2">
-                  <span>Base Price × {bookingSummary?.nights || 1} nights:</span>
+                  <span>₹{room?.Price.toLocaleString()} × {bookingSummary?.nights || 1} nights × {priceCalculation.numberOfRooms || 1} rooms:</span>
                   <span>₹{priceCalculation.base.toLocaleString()}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-3">
@@ -205,6 +214,7 @@ const BookingPage = () => {
         onHide={() => setShowPayment(false)}
         bookingDetails={priceCalculation}
         onConfirm={handlePaymentConfirm}
+        onMethodSelect={setSelectedPaymentMethod}
       />
       <Footer />
     </div>
@@ -212,3 +222,4 @@ const BookingPage = () => {
 };
 
 export default BookingPage;
+

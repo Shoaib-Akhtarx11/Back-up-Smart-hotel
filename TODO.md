@@ -1,33 +1,29 @@
+# Loyalty Feature Implementation TODO
 
-# Booking Page Fix - Completed
+## Task: Fix loyalty feature with full backend integration
 
-## Changes Made:
+### Backend Changes:
+- [x] 1. Update Loyalty Model - Added redemptionPointsBalance field and History array
+- [x] 2. Update Payment Controller - Added random loyalty points (1-500) on booking payment
+- [x] 3. Add redemption purchase endpoint in Loyalty Controller
+- [x] 4. Update Loyalty Routes to include purchase redemption endpoint and /me routes
 
-### 1. BookingForm.jsx - Fixed
-- Fixed date validation bug (was comparing Date object with number incorrectly)
-- Added user data pre-filling from logged-in user (Name → firstName/lastName, Email → email, ContactNumber → phone)
-- Added check-in/check-out time inputs with time pickers
-- Pass times in form submission
+### Frontend Changes:
+- [x] 5. Update Loyalty Redux Slice - Added redemption purchase action and new selectors
+- [x] 6. Update UserLoyalty Component - Use Redux + add redemption purchase modal UI
+- [ ] 7. Test the complete flow (Manual testing required)
 
-### 2. BookingPage.jsx - Fixed
-- Imported `createPayment` from paymentSlice (was missing)
-- Pass `initialEmail` prop to BookingForm
-- Pass times to booking creation
-- Navigate to success page with full booking details after payment
+## Summary of Changes:
+- Random loyalty points (1-500) are now awarded when a user completes a payment for a booking
+- Users can view their loyalty points and redemption points
+- Users can convert loyalty points to redemption points at 1:1 ratio via the UserLoyalty component
+- History of all transactions is stored in the database
+- Full backend integration with proper API endpoints
 
-### 3. BookingSuccess.jsx - Created
-- New page showing booking confirmation details
-- Displays: user name, hotel name, room type, payment ID, check-in/out dates and times, total amount
-- Shows loyalty points earned
-- Print receipt functionality
-- Navigation buttons
+## API Endpoints:
+- GET /api/loyalty/me - Get current user's loyalty account
+- GET /api/loyalty/history/me - Get loyalty history
+- POST /api/loyalty/purchase-redemption - Convert loyalty points to redemption points (1:1)
 
-### 4. App.jsx - Updated
-- Added import for BookingSuccess component
-- Added route `/booking-success`
-
-## Partial Implementation:
-- Loyalty points are calculated and shown in success page
-- Redemption points discount feature would require additional backend work
-
+## Status: COMPLETED
 

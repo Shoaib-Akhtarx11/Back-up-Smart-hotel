@@ -17,11 +17,13 @@ export const fetchUserBookings = createAsyncThunk('bookings/fetchUserBookings', 
 });
 
 export const createBooking = createAsyncThunk('bookings/createBooking', async (bookingData) => {
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/bookings`, {
     method: 'POST',
     credentials: 'include',
     headers: { 
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
     },
     body: JSON.stringify(bookingData)
   });

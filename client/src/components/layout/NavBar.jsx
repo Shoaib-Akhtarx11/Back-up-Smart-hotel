@@ -132,11 +132,11 @@ const NavBar = ({ isHomePage = false }) => {
                   {isDropdownOpen && (
                     <div
                       className="position-absolute bg-white border border-dark rounded-2 shadow p-2 mt-2"
-                      style={{ width: "200px", right: 0, zIndex: 9999 }}
+                      style={{ width: "220px", right: 0, zIndex: 9999 }}
                     >
                       <ul className="list-unstyled m-0 p-0 text-start">
-                        <li className="fw-bold px-2 pt-1 small">Account</li>
-                        <hr className="my-1" />
+                        {/* Account Section */}
+                        <li className="fw-bold px-2 pt-1 small text-muted">ACCOUNT</li>
                         {role !== "admin" && (
                           <li>
                             <Link
@@ -148,50 +148,71 @@ const NavBar = ({ isHomePage = false }) => {
                             </Link>
                           </li>
                         )}
+                        
+                        {/* My Bookings Section - Only for guests */}
                         {role === "guest" && (
-                          <li>
-                            <Link
-                              to="/loyalty"
-                              className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
-                              onClick={() => setIsDropdownOpen(false)}
-                            >
-                              <FaUserCircle /> My Points
-                            </Link>
-                          </li>
+                          <>
+                            <li className="fw-bold px-2 pt-2 small text-muted">MY BOOKINGS</li>
+                            <li>
+                              <Link
+                                to="/account"
+                                className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
+                                onClick={() => setIsDropdownOpen(false)}
+                              >
+                                <FaCalendarAlt /> My Bookings
+                              </Link>
+                            </li>
+                          </>
                         )}
+                        
+                        {/* My Points Section - Only for guests */}
+                        {role === "guest" && (
+                          <>
+                            <li className="fw-bold px-2 pt-2 small text-muted">MY POINTS</li>
+                            <li>
+                              <Link
+                                to="/loyalty"
+                                className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
+                                onClick={() => setIsDropdownOpen(false)}
+                              >
+                                <FaUserCircle /> Loyalty Points
+                              </Link>
+                            </li>
+                          </>
+                        )}
+                        
+                        {/* Manager Section */}
                         {role === "manager" && (
-                          <li>
-                            <Link
-                              to="/manager"
-                              className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
-                              onClick={() => setIsDropdownOpen(false)}
-                            >
-                              <FaCog /> Manager DB
-                            </Link>
-                          </li>
+                          <>
+                            <li className="fw-bold px-2 pt-2 small text-muted">DASHBOARD</li>
+                            <li>
+                              <Link
+                                to="/manager"
+                                className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
+                                onClick={() => setIsDropdownOpen(false)}
+                              >
+                                <FaCog /> Manager Dashboard
+                              </Link>
+                            </li>
+                          </>
                         )}
+                        
+                        {/* Admin Section */}
                         {role === "admin" && (
-                          <li>
-                            <Link
-                              to="/admin"
-                              className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
-                              onClick={() => setIsDropdownOpen(false)}
-                            >
-                              <FaCog /> Admin DB
-                            </Link>
-                          </li>
+                          <>
+                            <li className="fw-bold px-2 pt-2 small text-muted">ADMIN</li>
+                            <li>
+                              <Link
+                                to="/admin"
+                                className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
+                                onClick={() => setIsDropdownOpen(false)}
+                              >
+                                <FaCog /> Admin Dashboard
+                              </Link>
+                            </li>
+                          </>
                         )}
-                        {role === "guest" && (
-                          <li>
-                            <Link
-                              to="/account"
-                              className="d-flex align-items-center gap-2 text-dark text-decoration-none py-1 px-2 rounded hover-bg-light"
-                              onClick={() => setIsDropdownOpen(false)}
-                            >
-                              <FaCalendarAlt /> My Bookings
-                            </Link>
-                          </li>
-                        )}
+                        
                         <hr className="my-1" />
                         <li>
                           <a

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import NavBar from "../components/layout/NavBar";
 import Footer from "../components/layout/Footer";
-import { logout } from "../redux/authSlice";
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaTrophy, FaCalendar, FaBuilding } from "react-icons/fa";
-import { getUserBookings, getUserLoyalty } from "../utils/userDataManager";
+import { logout, updateUser } from "../redux/authSlice";
+import UserProfile from "../components/features/userDetails/UserProfile";
+import UserBookings from "../components/features/userDetails/UserBookings";
+import UserLoyalty from "../components/features/userDetails/UserLoyalty";
+import { FaUser, FaTrophy, FaCalendar, FaBuilding } from "react-icons/fa";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600';
 
 const UserAccount = () => {
   const navigate = useNavigate();
@@ -13,61 +17,98 @@ const UserAccount = () => {
   
   const auth = useSelector((state) => state.auth);
   const currentUser = auth.user;
-  const userRole = auth.role;
+  const userRole = currentUser?.role || currentUser?.Role || "guest";
   const isAuthenticated = auth.isAuthenticated;
   
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
   const [isEditMode, setIsEditMode] = useState(false);
-  const [allBookings, setAllBookings] = useState([]);
-  const [loyalty, setLoyalty] = useState({ pointsBalance: 0, history: [] });
   const [editSuccess, setEditSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: currentUser?.name || "",
-    email: currentUser?.email || "",
-    phone: currentUser?.phone || currentUser?.contactNumber || "",
-    address: currentUser?.address || "",
-    city: currentUser?.city || "",
-    country: currentUser?.country || "",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    country: "",
   });
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login", { state: { message: "Please login to view your account" } });
+      return;
     }
-  }, [isAuthenticated, navigate]);
 
-  // Load user-specific bookings (only for guests)
-  useEffect(() => {
-    if (currentUser?.id && userRole === "guest") {
-      const userBookings = getUserBookings(currentUser.id);
-      setAllBookings(userBookings);
-    }
-  }, [currentUser?.id, userRole]);
-
-  // Load loyalty points (only for guests)
-  useEffect(() => {
-    if (currentUser?.id && userRole === "guest") {
-      const userLoyalty = getUserLoyalty(currentUser.id);
-      setLoyalty(userLoyalty);
-    }
-  }, [currentUser?.id, userRole]);
-
-  // Update formData when currentUser changes
-  useEffect(() => {
     if (currentUser) {
       setFormData({
-        name: currentUser?.name || "",
-        email: currentUser?.email || "",
-        phone: currentUser?.phone || currentUser?.contactNumber || "",
-        address: currentUser?.address || "",
-        city: currentUser?.city || "",
-        country: currentUser?.country || "",
+        name: currentUser.name || currentUser.Name || "",
+        email: currentUser.email || currentUser.Email || "",
+        phone: currentUser.phone || currentUser.ContactNumber || "",
+        address: currentUser.address || "",
+        city: currentUser.city || "",
+        country: currentUser.country || "",
       });
     }
-  }, [currentUser]);
 
-  const userBookings = allBookings.filter(b => b.userId === currentUser?.id);
+    loadUserData();
+  }, [isAuthenticated, currentUser]);
+
+  const loadUserData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      if (!token) {
+        console.error("No token found");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user account data from backend using aggregation
+      const response = await fetch(`${API_URL}/api/auth/account-data`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
+
+      // Handle 401 - redirect to login
+      if (response.status === 401) {
+        console.error("Unauthorized - redirecting to login");
+        dispatch(logout());
+        navigate("/login", { state: { message: "Session expired. Please login again." } });
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Set bookings from backend
+        setBookings(data.data.bookings || []);
+        
+        // Update form data with backend user data
+        if (data.data.user) {
+          setFormData({
+            name: data.data.user.name || data.data.user.Name || "",
+            email: data.data.user.email || data.data.user.Email || "",
+            phone: data.data.user.contactNumber || data.data.user.ContactNumber || "",
+            address: data.data.user.address || "",
+            city: data.data.user.city || "",
+            country: data.data.user.country || "",
+          });
+        }
+      } else {
+        console.error("Failed to fetch account data:", data.message);
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+    }
+    setLoading(false);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -77,17 +118,65 @@ const UserAccount = () => {
     }));
   };
 
-  const handleSaveProfile = () => {
-    const updatedUser = {
-      ...currentUser,
-      ...formData
-    };
-    
-    dispatch(updateAuthUser(updatedUser));
-    localStorage.setItem("activeUser", JSON.stringify(updatedUser));
-    setEditSuccess(true);
-    setIsEditMode(false);
-    setTimeout(() => setEditSuccess(false), 3000);
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      if (!token) {
+        console.error("No token found");
+        setLoading(false);
+        return;
+      }
+
+      // Call backend API to update profile
+      const response = await fetch(`${API_URL}/api/auth/update-profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          Name: formData.name,
+          ContactNumber: formData.phone,
+          Address: formData.address,
+          City: formData.city,
+          Country: formData.country
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update Redux state with the updated user data from backend
+        const updatedUser = {
+          ...currentUser,
+          name: data.user.Name || formData.name,
+          email: data.user.Email || currentUser.email,
+          ContactNumber: data.user.ContactNumber || formData.phone,
+          address: data.user.Address || formData.address,
+          city: data.user.City || formData.city,
+          country: data.user.Country || formData.country
+        };
+        
+        dispatch(updateUser(updatedUser));
+        sessionStorage.setItem("user", JSON.stringify(updatedUser));
+        setEditSuccess(true);
+        setIsEditMode(false);
+        setTimeout(() => setEditSuccess(false), 3000);
+        
+        // Reload user data to ensure consistency
+        loadUserData();
+      } else {
+        console.error("Failed to update profile:", data.message);
+        alert(data.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert('Error saving profile. Please try again.');
+    }
+    setLoading(false);
   };
 
   const handleLogout = () => {
@@ -95,12 +184,6 @@ const UserAccount = () => {
     navigate("/");
   };
 
-  const getBookingStatusBadge = (status) => {
-    const statusClass = status === "Confirmed" ? "bg-success" : status === "Cancelled" ? "bg-danger" : "bg-warning";
-    return <span className={`badge ${statusClass}`}>{status}</span>;
-  };
-
-  // Determine which tabs to show based on role
   const getTabs = () => {
     switch(userRole) {
       case "manager":
@@ -115,10 +198,15 @@ const UserAccount = () => {
 
   const availableTabs = getTabs();
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !currentUser) {
     return (
-      <div className="vh-100 d-flex align-items-center justify-content-center">
-        <div className="spinner-border text-primary"></div>
+      <div className="bg-light min-vh-100 d-flex flex-column">
+        <NavBar />
+        <div className="container py-5 text-center">
+          <h4>Loading...</h4>
+          <div className="spinner-border text-primary mt-3"></div>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -127,11 +215,10 @@ const UserAccount = () => {
     <div className="bg-light min-vh-100 d-flex flex-column">
       <NavBar />
 
-      {/* Breadcrumb */}
       <nav className="bg-white border-bottom py-3 mb-4">
         <div className="container">
           <ol className="breadcrumb mb-0 small">
-            <li className="breadcrumb-item"><a href="/" className="text-decoration-none">Home</a></li>
+            <li className="breadcrumb-item"><Link to="/" className="text-decoration-none">Home</Link></li>
             <li className="breadcrumb-item active fw-bold text-dark">My Account</li>
           </ol>
         </div>
@@ -139,13 +226,13 @@ const UserAccount = () => {
 
       <main className="container mb-5 flex-grow-1">
         <div className="row g-4">
-          {/* Sidebar */}
           <div className="col-lg-3">
             <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
               <div className="bg-primary text-white p-4 text-center">
                 <div className="fs-1 mb-2">👤</div>
                 <h5 className="fw-bold mb-1">{currentUser?.name || 'User'}</h5>
                 <p className="small mb-0">{currentUser?.email}</p>
+                <span className="badge bg-light text-primary mt-2">{userRole}</span>
               </div>
 
               <div className="list-group list-group-flush">
@@ -206,7 +293,6 @@ const UserAccount = () => {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="col-lg-9">
             {editSuccess && (
               <div className="alert alert-success alert-dismissible fade show" role="alert">
@@ -215,270 +301,45 @@ const UserAccount = () => {
               </div>
             )}
 
-            {/* PROFILE TAB */}
             {activeTab === "profile" && (
-              <div className="card border-0 shadow-sm rounded-4">
-                <div className="card-body p-4">
-                  <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h4 className="fw-bold mb-0">Profile Information</h4>
-                    <button
-                      onClick={() => setIsEditMode(!isEditMode)}
-                      className="btn btn-primary btn-sm rounded-pill"
-                    >
-                      {isEditMode ? "Cancel" : "Edit Profile"}
-                    </button>
-                  </div>
-
-                  {isEditMode ? (
-                    <form>
-                      <div className="row g-3">
-                        <div className="col-12">
-                          <label className="form-label fw-bold small text-muted">Full Name</label>
-                          <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            className="form-control rounded-3"
-                            placeholder="Enter full name"
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-bold small text-muted">Email</label>
-                          <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            className="form-control rounded-3"
-                            placeholder="Enter email"
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-bold small text-muted">Phone</label>
-                          <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            className="form-control rounded-3"
-                            placeholder="Enter phone number"
-                          />
-                        </div>
-                        <div className="col-12">
-                          <label className="form-label fw-bold small text-muted">Address</label>
-                          <input
-                            type="text"
-                            name="address"
-                            value={formData.address}
-                            onChange={handleInputChange}
-                            className="form-control rounded-3"
-                            placeholder="Enter address"
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-bold small text-muted">City</label>
-                          <input
-                            type="text"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleInputChange}
-                            className="form-control rounded-3"
-                            placeholder="Enter city"
-                          />
-                        </div>
-                        <div className="col-md-6">
-                          <label className="form-label fw-bold small text-muted">Country</label>
-                          <input
-                            type="text"
-                            name="country"
-                            value={formData.country}
-                            onChange={handleInputChange}
-                            className="form-control rounded-3"
-                            placeholder="Enter country"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-4 d-flex gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSaveProfile}
-                          className="btn btn-primary rounded-pill"
-                        >
-                          Save Changes
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsEditMode(false)}
-                          className="btn btn-outline-secondary rounded-pill"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="row g-4">
-                      <div className="col-md-6">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaUser className="text-primary me-2" />
-                          <label className="fw-bold small text-muted mb-0">Name</label>
-                        </div>
-                        <p className="ms-4">{currentUser?.name || 'N/A'}</p>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaEnvelope className="text-primary me-2" />
-                          <label className="fw-bold small text-muted mb-0">Email</label>
-                        </div>
-                        <p className="ms-4">{currentUser?.email}</p>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaPhone className="text-primary me-2" />
-                          <label className="fw-bold small text-muted mb-0">Phone</label>
-                        </div>
-                        <p className="ms-4">{currentUser?.phone || currentUser?.contactNumber || "Not provided"}</p>
-                      </div>
-                      <div className="col-md-6">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaMapMarkerAlt className="text-primary me-2" />
-                          <label className="fw-bold small text-muted mb-0">Location</label>
-                        </div>
-                        <p className="ms-4">{currentUser?.city || "Not provided"}, {currentUser?.country || "Not provided"}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <UserProfile 
+                currentUser={currentUser}
+                isEditMode={isEditMode}
+                setIsEditMode={setIsEditMode}
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleSaveProfile={handleSaveProfile}
+                editSuccess={editSuccess}
+                loading={loading}
+              />
             )}
 
-            {/* BOOKINGS TAB - Only for guests */}
-            {activeTab === "bookings" && userRole === "guest" && (
-              <div className="card border-0 shadow-sm rounded-4">
-                <div className="card-body p-4">
-                  <h4 className="fw-bold mb-4">My Bookings</h4>
-                  
-                  {userBookings.length > 0 ? (
-                    <div className="table-responsive">
-                      <table className="table table-hover">
-                        <thead className="table-light">
-                          <tr>
-                            <th>Booking ID</th>
-                            <th>Room ID</th>
-                            <th>Check-In</th>
-                            <th>Check-Out</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {userBookings.map(booking => (
-                            <tr key={booking.id}>
-                              <td>
-                                <small className="fw-bold text-primary">{booking.id}</small>
-                              </td>
-                              <td>{booking.roomId}</td>
-                              <td>{new Date(booking.checkInDate).toLocaleDateString()}</td>
-                              <td>{new Date(booking.checkOutDate).toLocaleDateString()}</td>
-                              <td>{getBookingStatusBadge(booking.status)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-5 bg-white rounded-4 border">
-                      <div className="fs-1 mb-3">📅</div>
-                      <h5>No Bookings Yet</h5>
-                      <p className="text-muted mb-3">You haven't made any bookings. Start exploring hotels!</p>
-                      <a href="/hotelList" className="btn btn-primary rounded-pill">
-                        Browse Hotels
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {activeTab === "bookings" && (
+              <UserBookings 
+                bookings={bookings} 
+                loading={loading}
+                onBookingCancelled={() => loadUserData()}
+              />
             )}
 
-            {/* LOYALTY TAB - Only for guests */}
-            {activeTab === "loyalty" && userRole === "guest" && (
-              <div className="card border-0 shadow-sm rounded-4">
-                <div className="card-body p-4">
-                  <h4 className="fw-bold mb-4">Loyalty Points</h4>
-                  
-                  <div className="row g-4 mb-4">
-                    <div className="col-md-6">
-                      <div className="card border-0 bg-gradient text-white rounded-4 p-4" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
-                        <div className="d-flex justify-content-between align-items-start mb-3">
-                          <div>
-                            <p className="small mb-2 opacity-75">Total Points Balance</p>
-                            <h2 className="fw-bold mb-0">{loyalty?.pointsBalance || 0}</h2>
-                          </div>
-                          <FaTrophy className="fs-2 opacity-50" />
-                        </div>
-                        <p className="small mb-0">
-                          <strong>1 Point = ₹1</strong> discount on your next booking
-                        </p>
-                      </div>
-                    </div>
-                    <div className="col-md-6">
-                      <div className="card border-0 bg-light rounded-4 p-4">
-                        <p className="small text-muted mb-2">Redeem Your Points</p>
-                        <h5 className="fw-bold mb-3">Convert Points to Discount</h5>
-                        <p className="small mb-3">
-                          You can use your loyalty points to get discounts on your next hotel booking. Each point is worth ₹1!
-                        </p>
-                        <button className="btn btn-primary rounded-pill w-100" disabled={loyalty?.pointsBalance === 0}>
-                          Redeem Points
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h5 className="fw-bold mt-5 mb-3">Points History</h5>
-                  {loyalty?.history && loyalty.history.length > 0 ? (
-                    <div className="list-group list-group-flush">
-                      {loyalty.history.map(entry => (
-                        <div key={entry.id} className="list-group-item d-flex justify-content-between align-items-center py-3 px-0">
-                          <div>
-                            <p className="fw-bold mb-1">{entry.activity}</p>
-                            <small className="text-muted">{entry.date}</small>
-                          </div>
-                          <span className="badge bg-success fs-6">+{entry.points}</span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-5 bg-light rounded-4 border">
-                      <div className="fs-1 mb-3">🏆</div>
-                      <h5 className="fw-bold">No Points Yet</h5>
-                      <p className="text-muted mb-3">Book a hotel to earn loyalty points and enjoy exclusive rewards!</p>
-                      <a href="/hotelList" className="btn btn-primary rounded-pill">
-                        Start Booking
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
+            {activeTab === "loyalty" && (
+              <UserLoyalty currentUser={currentUser} />
             )}
 
-            {/* USER DETAILS TAB - Only for admins */}
             {activeTab === "users" && userRole === "admin" && (
               <div className="card border-0 shadow-sm rounded-4">
                 <div className="card-body p-4">
                   <h4 className="fw-bold mb-4">User Management</h4>
                   <p className="text-muted">Manage system users and their roles.</p>
-                  {/* Add user management content here */}
                 </div>
               </div>
             )}
 
-            {/* HOTEL DETAILS TAB - Only for admins */}
             {activeTab === "hotels" && userRole === "admin" && (
               <div className="card border-0 shadow-sm rounded-4">
                 <div className="card-body p-4">
                   <h4 className="fw-bold mb-4">Hotel Management</h4>
                   <p className="text-muted">Manage hotel properties and their details.</p>
-                  {/* Add hotel management content here */}
                 </div>
               </div>
             )}
@@ -492,3 +353,4 @@ const UserAccount = () => {
 };
 
 export default UserAccount;
+

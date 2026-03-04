@@ -1,4 +1,6 @@
 import User from '../models/user.model.js';
+import Booking from '../models/booking.model.js';
+import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 
 // Generate JWT Token
@@ -106,7 +108,7 @@ export const login = async (req, res) => {
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
@@ -116,6 +118,7 @@ export const login = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Login successful',
+      token, // Also send token in body for localStorage
       user: userResponse,
     });
   } catch (error) {
@@ -181,10 +184,10 @@ export const getAllUsers = async (req, res) => {
 // @access  Private
 export const updateProfile = async (req, res) => {
   try {
-    const { Name, ContactNumber } = req.body;
+    const { Name, ContactNumber, Address, City, Country, DateOfBirth } = req.body;
     const userId = req.user.id;
 
-    if (!Name && !ContactNumber) {
+    if (!Name && !ContactNumber && !Address && !City && !Country && !DateOfBirth) {
       return res.status(400).json({
         success: false,
         message: 'Please provide at least one field to update'
@@ -214,6 +217,10 @@ export const updateProfile = async (req, res) => {
     const updateData = {};
     if (Name) updateData.Name = Name;
     if (ContactNumber) updateData.ContactNumber = ContactNumber;
+    if (Address !== undefined) updateData.Address = Address;
+    if (City) updateData.City = City;
+    if (Country) updateData.Country = Country;
+    if (DateOfBirth) updateData.DateOfBirth = DateOfBirth;
 
     const user = await User.findByIdAndUpdate(
       userId,
@@ -328,6 +335,203 @@ export const changePassword = async (req, res) => {
       });
     }
 
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error'
+    });
+  }
+};
+
+// @desc    Get user account data with bookings using aggregation
+// @route   GET /api/auth/account-data
+// @access  Private
+export const getUserAccountData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Convert userId to MongoDB ObjectId
+    const objectId = new mongoose.Types.ObjectId(userId);
+
+    // Use aggregation to get user profile and bookings with room and hotel details
+    const accountData = await User.aggregate([
+      // Stage 1: Match the user by ID
+      {
+        $match: { _id: objectId }
+      },
+      // Stage 2: Project user fields (exclude password)
+      {
+        $project: {
+          Password: 0,
+          __v: 0
+        }
+      },
+      // Stage 3: Lookup bookings for this user
+      {
+        $lookup: {
+          from: 'bookings',
+          localField: '_id',
+          foreignField: 'UserID',
+          as: 'bookings'
+        }
+      },
+      // Stage 4: Unwind bookings (if exists) to enable nested lookups
+      {
+        $unwind: {
+          path: '$bookings',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      // Stage 5: Lookup room details for each booking
+      {
+        $lookup: {
+          from: 'rooms',
+          localField: 'bookings.RoomID',
+          foreignField: '_id',
+          as: 'bookings.room'
+        }
+      },
+      // Stage 6: Unwind room array
+      {
+        $unwind: {
+          path: '$bookings.room',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      // Stage 7: Lookup hotel details for each booking
+      {
+        $lookup: {
+          from: 'hotels',
+          localField: 'bookings.room.HotelID',
+          foreignField: '_id',
+          as: 'bookings.hotel'
+        }
+      },
+      // Stage 8: Unwind hotel array
+      {
+        $unwind: {
+          path: '$bookings.hotel',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      // Stage 9: Group back to reconstruct user with bookings array
+      {
+        $group: {
+          _id: '$_id',
+          Name: { $first: '$Name' },
+          Email: { $first: '$Email' },
+          Role: { $first: '$Role' },
+          ContactNumber: { $first: '$ContactNumber' },
+          Address: { $first: '$Address' },
+          City: { $first: '$City' },
+          Country: { $first: '$Country' },
+          DateOfBirth: { $first: '$DateOfBirth' },
+          createdAt: { $first: '$createdAt' },
+          updatedAt: { $first: '$updatedAt' },
+          bookings: {
+            $push: '$bookings'
+          }
+        }
+      },
+      // Stage 10: Project the final structure with formatted bookings
+      {
+        $project: {
+          _id: 1,
+          Name: 1,
+          Email: 1,
+          Role: 1,
+          ContactNumber: 1,
+          Address: 1,
+          City: 1,
+          Country: 1,
+          DateOfBirth: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          bookings: {
+            $map: {
+              input: '$bookings',
+              as: 'booking',
+              in: {
+                _id: '$$booking._id',
+                BookingID: '$$booking.BookingID',
+                NumberOfRooms: '$$booking.NumberOfRooms',
+                CheckInDate: '$$booking.CheckInDate',
+                CheckOutDate: '$$booking.CheckOutDate',
+                Status: '$$booking.Status',
+                createdAt: '$$booking.createdAt',
+                updatedAt: '$$booking.updatedAt',
+                room: {
+                  _id: '$$booking.room._id',
+                  RoomID: '$$booking.room.RoomID',
+                  Type: '$$booking.room.Type',
+                  Price: '$$booking.room.Price',
+                  Availability: '$$booking.room.Availability',
+                  Features: '$$booking.room.Features',
+                  Image: '$$booking.room.Image'
+                },
+                hotel: {
+                  _id: '$$booking.hotel._id',
+                  HotelID: '$$booking.hotel.HotelID',
+                  Name: '$$booking.hotel.Name',
+                  Location: '$$booking.hotel.Location',
+                  Address: '$$booking.hotel.Address',
+                  Rating: '$$booking.hotel.Rating',
+                  Image: '$$booking.hotel.Image'
+                }
+              }
+            }
+          }
+        }
+      }
+    ]);
+
+    if (!accountData || accountData.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = accountData[0];
+
+    // Format the response to match the expected structure
+    const response = {
+      success: true,
+      data: {
+        user: {
+          _id: userData._id,
+          name: userData.Name,
+          email: userData.Email,
+          role: userData.Role,
+          contactNumber: userData.ContactNumber,
+          address: userData.Address || '',
+          city: userData.City || '',
+          country: userData.Country || '',
+          dateOfBirth: userData.DateOfBirth,
+          createdAt: userData.createdAt,
+          updatedAt: userData.updatedAt
+        },
+        bookings: userData.bookings.map(booking => ({
+          id: booking.BookingID || booking._id,
+          _id: booking._id,
+          hotelName: booking.hotel?.Name || 'N/A',
+          hotel: booking.hotel?.Name || 'N/A',
+          roomType: booking.room?.Type || 'N/A',
+          room: booking.room?.Type || 'N/A',
+          checkInDate: booking.CheckInDate,
+          checkOutDate: booking.CheckOutDate,
+          status: booking.Status,
+          numberOfRooms: booking.NumberOfRooms,
+          price: booking.room?.Price || 0,
+          createdAt: booking.createdAt,
+          updatedAt: booking.updatedAt
+        }))
+      }
+    };
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    console.error('Get account data error:', error);
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error'

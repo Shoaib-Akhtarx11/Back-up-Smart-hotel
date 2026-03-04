@@ -16,6 +16,29 @@ const LoyaltySchema = new mongoose.Schema(
       default: 0,
       min: [0, 'Points balance cannot be negative'],
     },
+    RedemptionPointsBalance: {
+      type: Number,
+      default: 0,
+      min: [0, 'Redemption points balance cannot be negative'],
+    },
+    History: [{
+      type: {
+        type: String,
+        enum: ['earned', 'redeemed', 'purchase'],
+        required: true
+      },
+      Points: {
+        type: Number,
+        required: true
+      },
+      Description: {
+        type: String
+      },
+      Date: {
+        type: Date,
+        default: Date.now
+      }
+    }],
     LastUpdated: {
       type: Date,
       default: Date.now,
@@ -26,3 +49,4 @@ const LoyaltySchema = new mongoose.Schema(
 );
 
 export default mongoose.model('LoyaltyAccount', LoyaltySchema);
+

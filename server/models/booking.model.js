@@ -16,6 +16,12 @@ const BookingSchema = new mongoose.Schema(
       ref: 'Room',
       required: [true, 'Room ID is required'],
     },
+    NumberOfRooms: {
+      type: Number,
+      default: 1,
+      min: [1, 'At least 1 room is required'],
+      max: [10, 'Maximum 10 rooms can be booked at a time'],
+    },
     CheckInDate: {
       type: Date,
       required: [true, 'Check-in date is required'],
@@ -26,7 +32,7 @@ const BookingSchema = new mongoose.Schema(
     },
     Status: {
       type: String,
-      enum: ['pending', 'confirmed', 'cancelled'],
+      enum: ['pending', 'success', 'failed', 'confirmed', 'cancelled'],
       default: 'pending',
     },
     PaymentID: {
@@ -38,3 +44,4 @@ const BookingSchema = new mongoose.Schema(
 );
 
 export default mongoose.model('Booking', BookingSchema);
+

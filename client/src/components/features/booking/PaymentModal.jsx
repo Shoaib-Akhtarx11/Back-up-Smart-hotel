@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { FaCreditCard, FaUniversity, FaWallet, FaMobileAlt, FaCheck, FaArrowLeft } from 'react-icons/fa';
 
-const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
+const PaymentModal = ({ show, onHide, bookingDetails, onConfirm, onMethodSelect }) => {
   const [step, setStep] = useState('method'); // 'method' -> 'form' -> 'confirm'
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [formData, setFormData] = useState({
@@ -48,6 +48,10 @@ const PaymentModal = ({ show, onHide, bookingDetails, onConfirm }) => {
 
   const handleMethodSelect = (methodId) => {
     setSelectedMethod(methodId);
+    // Notify parent component about the selected method
+    if (onMethodSelect) {
+      onMethodSelect(methodId);
+    }
     setFormData({
       cardNumber: '',
       cardHolder: '',

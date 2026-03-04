@@ -637,3 +637,13 @@
 
 .hotel-img-zoom { transition: transform 0.5s ease; }
 .room-card-hover:hover .hotel-img-zoom { transform: scale(1.1); }
+
+/* Spin animation for loading spinners */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}

@@ -11,6 +11,7 @@ const BookingForm = ({ hotel, room, user, initialEmail, onSubmit }) => {
     const [endDate, setEndDate] = useState(new Date(today.getTime() + 86400000)); // tomorrow
     const [checkInTime, setCheckInTime] = useState('14:00');
     const [checkOutTime, setCheckOutTime] = useState('11:00');
+    const [numberOfRooms, setNumberOfRooms] = useState(1);
     const [guestDetails, setGuestDetails] = useState({
         firstName: '',
         lastName: '',
@@ -88,6 +89,7 @@ const BookingForm = ({ hotel, room, user, initialEmail, onSubmit }) => {
                 checkInTime,
                 checkOutTime,
                 nights: nights,
+                numberOfRooms: numberOfRooms,
                 isDraft: true // Key: Tells parent NOT to show the modal
             });
         }, 500);
@@ -112,6 +114,7 @@ const BookingForm = ({ hotel, room, user, initialEmail, onSubmit }) => {
             checkInTime,
             checkOutTime,
             nights: nights,
+            numberOfRooms: numberOfRooms,
             isDraft: false // Key: Tells parent TO show the modal
         });
     };
@@ -234,6 +237,30 @@ const BookingForm = ({ hotel, room, user, initialEmail, onSubmit }) => {
                         value={checkOutTime}
                         onChange={(e) => setCheckOutTime(e.target.value)}
                     />
+                </div>
+            </div>
+
+            <div className="row g-3 mb-4">
+                <div className="col-md-12">
+                    <label className="form-label small fw-bold text-muted">Number of Rooms *</label>
+                    <div className="d-flex align-items-center">
+                        <button 
+                            type="button" 
+                            className="btn btn-outline-secondary rounded-3"
+                            onClick={() => setNumberOfRooms(Math.max(1, numberOfRooms - 1))}
+                        >
+                            <i className="bi bi-dash"></i>
+                        </button>
+                        <span className="mx-3 fw-bold fs-5">{numberOfRooms}</span>
+                        <button 
+                            type="button" 
+                            className="btn btn-outline-secondary rounded-3"
+                            onClick={() => setNumberOfRooms(Math.min(10, numberOfRooms + 1))}
+                        >
+                            <i className="bi bi-plus"></i>
+                        </button>
+                        <span className="ms-3 text-muted small">(Max 10 rooms)</span>
+                    </div>
                 </div>
             </div>
 

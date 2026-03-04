@@ -3,11 +3,13 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 export const createPayment = createAsyncThunk('payment/createPayment', async (paymentData) => {
+  const token = localStorage.getItem('token');
   const res = await fetch(`${API_BASE}/api/payments`, {
     method: 'POST',
     credentials: 'include',
     headers: { 
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
     },
     body: JSON.stringify(paymentData)
   });
