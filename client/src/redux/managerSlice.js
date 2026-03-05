@@ -25,6 +25,19 @@ export const fetchCurrentManager = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch all dashboard data for manager (hotels, rooms, bookings, reviews, statistics)
+export const fetchManagerDashboardData = createAsyncThunk(
+  'manager/fetchManagerDashboardData',
+  async () => {
+    const res = await fetch(`${API_BASE}/api/managers/dashboard-data`, getAuthHeader());
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch dashboard data');
+    }
+    return data.data;
+  }
+);
+
 // Async thunk to fetch all managers (admin only)
 export const fetchAllManagers = createAsyncThunk(
   'manager/fetchAllManagers',
@@ -146,6 +159,7 @@ const managerSlice = createSlice({
     currentManager: null,
     allManagers: [],
     managerByHotel: null,
+    dashboardData: null,
     loading: false,
     error: null,
     success: false,
@@ -160,6 +174,9 @@ const managerSlice = createSlice({
     clearCurrentManager: (state) => {
       state.currentManager = null;
     },
+    clearDashboardData: (state) => {
+      state.dashboardData = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -173,6 +190,19 @@ const managerSlice = createSlice({
         state.currentManager = action.payload;
       })
       .addCase(fetchCurrentManager.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      // Fetch Manager Dashboard Data
+      .addCase(fetchManagerDashboardData.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchManagerDashboardData.fulfilled, (state, action) => {
+        state.loading = false;
+        state.dashboardData = action.payload;
+      })
+      .addCase(fetchManagerDashboardData.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message;
       })
@@ -285,12 +315,13 @@ const managerSlice = createSlice({
   },
 });
 
-export const { clearManagerError, clearManagerSuccess, clearCurrentManager } = managerSlice.actions;
+export const { clearManagerError, clearManagerSuccess, clearCurrentManager, clearDashboardData } = managerSlice.actions;
 
 // Selectors
 export const selectCurrentManager = (state) => state.manager.currentManager;
 export const selectAllManagers = (state) => state.manager.allManagers;
 export const selectManagerByHotel = (state) => state.manager.managerByHotel;
+export const selectManagerDashboardData = (state) => state.manager.dashboardData;
 export const selectManagerLoading = (state) => state.manager.loading;
 export const selectManagerError = (state) => state.manager.error;
 export const selectManagerSuccess = (state) => state.manager.success;

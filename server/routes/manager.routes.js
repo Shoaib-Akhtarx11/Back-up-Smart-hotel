@@ -6,6 +6,7 @@ import {
   getManagerByHotelId,
   getAllManagers,
   getCurrentManager,
+  getManagerDashboardData,
   updateManagerProfile,
   assignHotelToManager,
   deleteManagerProfile
@@ -19,6 +20,11 @@ const router = express.Router();
 // Protected routes
 // All routes require authentication
 router.use(protect);
+
+// @route   GET /api/managers/dashboard-data
+// @desc    Get all dashboard data for manager (hotels, rooms, bookings, reviews, statistics)
+// @access  Private (manager)
+router.get('/dashboard-data', authorize('manager', 'admin'), getManagerDashboardData);
 
 // @route   GET /api/managers/me
 // @desc    Get current manager profile

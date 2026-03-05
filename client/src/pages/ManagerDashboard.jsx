@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { logout } from '../redux/authSlice';
-import { fetchCurrentManager } from '../redux/managerSlice';
-import { FaBuilding, FaBed, FaCalendarCheck, FaStar, FaSignOutAlt, FaHome, FaChartBar } from 'react-icons/fa';
+import { fetchManagerDashboardData, selectManagerDashboardData } from '../redux/managerSlice';
+import { FaBuilding, FaBed, FaCalendarCheck, FaStar, FaSignOutAlt, FaHome, FaChartBar, FaMoneyBillWave, FaExclamationCircle } from 'react-icons/fa';
 
 // Manager Components - Direct imports
 import ManagerHotelList from '../components/features/manager/ManagerHotelList';
@@ -42,10 +42,15 @@ const ManagerDashboard = () => {
   // Get role
   const userRole = auth.role || localStorage.getItem('activeRole');
 
-  // Fetch current manager profile from backend
+  // Get ALL data from the new API (no localStorage)
+  const dashboardData = useSelector(selectManagerDashboardData);
+  const loading = managerState.loading;
+  const error = managerState.error;
+
+  // Fetch all dashboard data from the API using aggregation
   useEffect(() => {
     if (userRole === 'manager' || userRole === 'admin') {
-      dispatch(fetchCurrentManager());
+      dispatch(fetchManagerDashboardData());
     }
   }, [dispatch, userRole]);
 
@@ -56,60 +61,19 @@ const ManagerDashboard = () => {
     }
   }, [userRole, navigate]);
 
-  // Get data from Redux
-  const allHotels = useSelector((state) => state.hotels?.allHotels || []);
-  const allRooms = useSelector((state) => state.rooms?.allRooms || []);
-  const allBookings = useSelector((state) => state.bookings?.allBookings || []);
+  // Use data from API (dashboardData)
+  const managerHotels = dashboardData?.hotels || [];
+  const managerRooms = dashboardData?.rooms || [];
+  const managerBookings = dashboardData?.bookings || [];
+  const statistics = dashboardData?.statistics || {};
 
-  // Get manager's hotels
-  const getManagerHotels = () => {
-    const reduxHotels = allHotels || [];
-    const storedHotels = JSON.parse(localStorage.getItem('allHotels') || '[]');
-    
-    const hotelMap = new Map();
-    reduxHotels.forEach(h => hotelMap.set(h._id || h.id, h));
-    storedHotels.forEach(h => hotelMap.set(h._id || h.id, h));
-    
-    const allHotelsFromBoth = Array.from(hotelMap.values());
-    
-    return allHotelsFromBoth.filter(hotel => {
-      const hotelManagerId = hotel.ManagerID?._id || hotel.ManagerID || hotel.managerId;
-      return hotelManagerId === managerId || hotelManagerId === String(managerId);
-    });
-  };
-
-  const managerHotels = getManagerHotels();
-  const managerHotelIds = managerHotels.map(h => h._id || h.id);
-
-  // Get manager's rooms
-  const getManagerRooms = () => {
-    const storedRooms = JSON.parse(localStorage.getItem('allRooms') || '[]');
-    const reduxRooms = allRooms;
-    
-    const roomMap = new Map();
-    reduxRooms.forEach(r => roomMap.set(r._id || r.id, r));
-    storedRooms.forEach(r => roomMap.set(r._id || r.id, r));
-    
-    const allRoomsFromBoth = Array.from(roomMap.values());
-    
-    return allRoomsFromBoth.filter(room => {
-      const roomHotelId = room.HotelID?._id || room.HotelID || room.hotelId;
-      return managerHotelIds.includes(roomHotelId) || managerHotelIds.includes(String(roomHotelId));
-    });
-  };
-
-  const managerRooms = getManagerRooms();
-
-  // Get manager's bookings
-  const managerBookings = allBookings.filter(booking =>
-    managerHotelIds.includes(booking.hotelId) || managerHotelIds.includes(String(booking.hotelId))
-  );
-
-  // Statistics
-  const totalHotels = managerHotels.length;
-  const totalRooms = managerRooms.length;
-  const totalBookings = managerBookings.length;
-  const confirmedBookings = managerBookings.filter(b => b.status === 'Confirmed' || b.Status === 'Confirmed').length;
+  // Statistics from API
+  const totalHotels = statistics.totalHotels || managerHotels.length;
+  const totalRooms = statistics.totalRooms || managerRooms.length;
+  const totalBookings = statistics.totalBookings || managerBookings.length;
+  const confirmedBookings = statistics.confirmedBookings || 0;
+  const totalRevenue = statistics.totalRevenue || 0;
+  const averageRating = statistics.averageRating || 0;
 
   // Logout handler
   const handleLogout = () => {
@@ -127,20 +91,36 @@ const ManagerDashboard = () => {
 
   const handleHotelAdded = () => {
     setShowAddHotel(false);
-    window.location.reload();
+    // Refresh dashboard data after adding hotel
+    dispatch(fetchManagerDashboardData());
   };
 
   const handleEditHotel = {
     onEdit: (hotel) => {
       navigate(`/add-hotel?edit=${hotel._id || hotel.id}`);
     },
-    onDelete: (hotelId) => {
+    onDelete: async (hotelId) => {
       if (window.confirm('Are you sure you want to delete this hotel? This action cannot be undone.')) {
-        const storedHotels = JSON.parse(localStorage.getItem('allHotels') || '[]');
-        const filteredHotels = storedHotels.filter(h => (h._id || h.id) !== hotelId);
-        localStorage.setItem('allHotels', JSON.stringify(filteredHotels));
-        alert('Hotel deleted successfully!');
-        window.location.reload();
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5600/api'}/hotels/${hotelId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': token ? `Bearer ${token}` : '',
+            }
+          });
+          const data = await response.json();
+          if (data.success) {
+            alert('Hotel deleted successfully!');
+            // Refresh dashboard data
+            dispatch(fetchManagerDashboardData());
+          } else {
+            alert(data.message || 'Failed to delete hotel');
+          }
+        } catch (err) {
+          console.error('Error deleting hotel:', err);
+          alert('Failed to delete hotel. Please try again.');
+        }
       }
     }
   };
@@ -163,18 +143,64 @@ const ManagerDashboard = () => {
   const handleRoomSaved = () => {
     setShowAddRoom(false);
     setEditingRoom(null);
-    window.location.reload();
+    // Refresh dashboard data after saving room
+    dispatch(fetchManagerDashboardData());
   };
 
-  const handleDeleteRoom = (roomId) => {
+  const handleDeleteRoom = async (roomId) => {
     if (window.confirm('Are you sure you want to delete this room?')) {
-      const storedRooms = JSON.parse(localStorage.getItem('allRooms') || '[]');
-      const filteredRooms = storedRooms.filter(r => (r._id || r.id) !== roomId);
-      localStorage.setItem('allRooms', JSON.stringify(filteredRooms));
-      alert('Room deleted successfully!');
-      window.location.reload();
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5600/api'}/rooms/${roomId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert('Room deleted successfully!');
+          // Refresh dashboard data
+          dispatch(fetchManagerDashboardData());
+        } else {
+          alert(data.message || 'Failed to delete room');
+        }
+      } catch (err) {
+        console.error('Error deleting room:', err);
+        alert('Failed to delete room. Please try again.');
+      }
     }
   };
+
+  // Show loading state
+  if (loading && !dashboardData) {
+    return (
+      <div className="bg-light min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <div className="spinner-border text-primary mb-3" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <h5>Loading dashboard...</h5>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="bg-light min-vh-100 d-flex align-items-center justify-content-center">
+        <div className="text-center">
+          <div className="fs-1 mb-3 text-danger"><FaExclamationCircle /></div>
+          <h5 className="text-danger">Error Loading Dashboard</h5>
+          <p className="text-muted">{error}</p>
+          <button className="btn btn-primary" onClick={() => dispatch(fetchManagerDashboardData())}>
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Show Add Hotel Form
   if (showAddHotel) {
@@ -192,7 +218,7 @@ const ManagerDashboard = () => {
             onCancel={() => setShowAddHotel(false)}
           />
         </div>
-        </div>
+      </div>
     );
   }
 
@@ -220,7 +246,7 @@ const ManagerDashboard = () => {
             }}
           />
         </div>
-        </div>
+      </div>
     );
   }
 
@@ -247,7 +273,7 @@ const ManagerDashboard = () => {
               <FaSignOutAlt /> Logout
             </button>
           </div>
-          </div>
+        </div>
 
         {/* Statistics Cards */}
         <div className="row mb-4 g-3">
@@ -260,7 +286,7 @@ const ManagerDashboard = () => {
                 </div>
                 <FaBuilding className="fs-1 opacity-50" />
               </div>
-          </div>
+            </div>
           </div>
           <div className="col-md-3">
             <div className="card border-0 shadow-sm rounded-4 p-4 bg-info text-white">
@@ -271,7 +297,7 @@ const ManagerDashboard = () => {
                 </div>
                 <FaBed className="fs-1 opacity-50" />
               </div>
-          </div>
+            </div>
           </div>
           <div className="col-md-3">
             <div className="card border-0 shadow-sm rounded-4 p-4 bg-success text-white">
@@ -282,7 +308,7 @@ const ManagerDashboard = () => {
                 </div>
                 <FaCalendarCheck className="fs-1 opacity-50" />
               </div>
-          </div>
+            </div>
           </div>
           <div className="col-md-3">
             <div className="card border-0 shadow-sm rounded-4 p-4 bg-warning text-white">
@@ -293,9 +319,46 @@ const ManagerDashboard = () => {
                 </div>
                 <FaChartBar className="fs-1 opacity-50" />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Statistics Row */}
+        <div className="row mb-4 g-3">
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm rounded-4 p-4 bg-success text-white">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <p className="mb-1 opacity-75">Total Revenue</p>
+                  <h3 className="fw-bold mb-0">Rs.{totalRevenue.toLocaleString()}</h3>
+                </div>
+                <FaMoneyBillWave className="fs-1 opacity-50" />
               </div>
+            </div>
           </div>
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm rounded-4 p-4 bg-warning text-white">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <p className="mb-1 opacity-75">Average Rating</p>
+                  <h3 className="fw-bold mb-0">{averageRating > 0 ? `${averageRating} ★` : 'N/A'}</h3>
+                </div>
+                <FaStar className="fs-1 opacity-50" />
+              </div>
+            </div>
           </div>
+          <div className="col-md-4">
+            <div className="card border-0 shadow-sm rounded-4 p-4 bg-info text-white">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <p className="mb-1 opacity-75">Pending Bookings</p>
+                  <h3 className="fw-bold mb-0">{statistics.pendingBookings || 0}</h3>
+                </div>
+                <FaCalendarCheck className="fs-1 opacity-50" />
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Tabs */}
         <ul className="nav nav-tabs mb-4 border-bottom-0" role="tablist">
@@ -341,9 +404,10 @@ const ManagerDashboard = () => {
                 onAddHotel={handleAddHotel}
                 onEditHotel={handleEditHotel}
                 onViewHotel={handleViewHotel}
+                hotels={managerHotels}
               />
             </div>
-            </div>
+          </div>
         )}
 
         {/* Rooms Tab */}
@@ -352,12 +416,13 @@ const ManagerDashboard = () => {
             <div className="card-body p-4">
               <ManagerRoomList 
                 hotels={managerHotels}
+                rooms={managerRooms}
                 onAddRoom={handleAddRoom}
                 onEditRoom={{ onEdit: handleEditRoom }}
                 onDeleteRoom={handleDeleteRoom}
               />
             </div>
-            </div>
+          </div>
         )}
 
         {/* Bookings Tab */}
@@ -371,28 +436,27 @@ const ManagerDashboard = () => {
                       <tr>
                         <th>Hotel</th>
                         <th>Guest</th>
+                        <th>Room Type</th>
                         <th>Check-in</th>
                         <th>Check-out</th>
-                        <th>Total Price</th>
                         <th>Status</th>
                         <th className="text-end">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {managerBookings.map(booking => {
-                        const hotel = managerHotels.find(h => (h._id || h.id) === (booking.hotelId || booking.HotelID));
-                        const statusClass = booking.Status === 'Confirmed' || booking.status === 'Confirmed' ? 'bg-success' :
-                                           booking.Status === 'Cancelled' || booking.status === 'Cancelled' ? 'bg-danger' : 'bg-warning';
-                        const isApproved = booking.Status === 'Confirmed' || booking.status === 'Confirmed';
+                        const statusClass = booking.Status === 'confirmed' || booking.Status === 'Confirmed' ? 'bg-success' :
+                                           booking.Status === 'cancelled' || booking.Status === 'Cancelled' ? 'bg-danger' : 'bg-warning';
+                        const isApproved = booking.Status === 'confirmed' || booking.Status === 'Confirmed';
                         
                         return (
-                          <tr key={booking.BookingID || booking._id}>
-                            <td className="fw-bold">{hotel?.Name || hotel?.name || 'N/A'}</td>
-                            <td>{booking.GuestName || booking.guestName || 'Guest'}</td>
-                            <td>{new Date(booking.CheckInDate || booking.checkInDate).toLocaleDateString()}</td>
-                            <td>{new Date(booking.CheckOutDate || booking.checkOutDate).toLocaleDateString()}</td>
-                            <td className="fw-bold">Rs.{(booking.TotalPrice || booking.totalPrice || 0).toLocaleString()}</td>
-                            <td><span className={`badge ${statusClass}`}>{booking.Status || booking.status}</span></td>
+                          <tr key={booking._id || booking.BookingID}>
+                            <td className="fw-bold">{booking.RoomID?.HotelID?.Name || 'N/A'}</td>
+                            <td>{booking.UserID?.Name || 'Guest'}</td>
+                            <td>{booking.RoomID?.Type || 'N/A'}</td>
+                            <td>{new Date(booking.CheckInDate).toLocaleDateString()}</td>
+                            <td>{new Date(booking.CheckOutDate).toLocaleDateString()}</td>
+                            <td><span className={`badge ${statusClass}`}>{booking.Status}</span></td>
                             <td className="text-end">
                               <button
                                 className="btn btn-sm btn-outline-success me-1"
@@ -402,7 +466,7 @@ const ManagerDashboard = () => {
                               </button>
                               <button
                                 className="btn btn-sm btn-outline-danger"
-                                disabled={booking.Status === 'Cancelled' || booking.status === 'Cancelled'}
+                                disabled={booking.Status === 'cancelled' || booking.Status === 'Cancelled'}
                               >
                                 Disapprove
                               </button>
@@ -421,7 +485,7 @@ const ManagerDashboard = () => {
                 </div>
               )}
             </div>
-            </div>
+          </div>
         )}
 
         {/* Reviews Tab */}
@@ -430,11 +494,12 @@ const ManagerDashboard = () => {
             <div className="card-body p-4">
               <ManagerReviews hotels={managerHotels} />
             </div>
-            </div>
+          </div>
         )}
       </div>
-      </div>
+    </div>
   );
 };
 
 export default ManagerDashboard;
+
