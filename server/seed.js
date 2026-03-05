@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import Hotel from './models/hotel.model.js';
 import Room from './models/room.model.js';
 import User from './models/user.model.js';
+import Manager from './models/manager.model.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -21,7 +22,9 @@ const seedDatabase = async () => {
     // Clear existing data
     await Hotel.deleteMany({});
     await Room.deleteMany({});
-    console.log('Cleared existing hotel and room data');
+    await Manager.deleteMany({});
+    await User.deleteMany({ Role: { $in: ['admin', 'manager'] } });
+    console.log('Cleared all existing data');
 
     // Read sample data
     const hotelsData = JSON.parse(
@@ -30,32 +33,19 @@ const seedDatabase = async () => {
         'utf-8'
       )
     );
+    console.log(`Loaded ${hotelsData.length} hotels from JSON`);
 
-    // Clear and recreate users with proper hashed passwords
-    await User.deleteMany({ Role: { $in: ['admin', 'manager'] } });
-    console.log('Cleared existing admin and manager users');
-
-    // Create a default manager user
-    const manager = await User.create({
-      Name: 'Default Manager',
-      Email: 'manager@hotel.com',
-      email: 'manager@hotel.com',
-      Password: 'password123',
-      Role: 'manager',
-      ContactNumber: '9999999999',
-    });
-    console.log('Created default manager user');
-
-    // Create a default admin user
-    const admin = await User.create({
-      Name: 'Admin User',
-      Email: 'admin@hotel.com',
-      email: 'admin@hotel.com',
-      Password: 'admin123',
-      Role: 'admin',
-      ContactNumber: '1234567890',
-    });
-    console.log('Created default admin user');
+    // Indian names for managers
+    const indianNames = [
+      'Raj Patel', 'Amit Sharma', 'Vikram Singh', 'Arjun Nair', 'Karthik Menon',
+      'Sanjay Gupta', 'Prakash Verma', 'Deepak Kumar', 'Anil Joshi', 'Ravi Krishna',
+      'Suresh Iyer', 'Mahesh Chandra', 'Gopal Das', 'Harish Rao', 'Vijay Malhotra',
+      'Rajesh Khanna', 'Sunil Kapoor', 'Ajay Bhatia', 'Shah Rukh', 'Salman Ahmed',
+      'Aamir Khan', 'Ranbir Singh', 'Hrithik Roshan', 'Akshay Kumar', 'Saif Ali',
+      'Madhav Nair', 'Kamal Haasan', 'Rajinikanth', 'Mithun Chakraborty', 'Shankar',
+      'Anil Kapoor', 'Jackie Shroff', 'Sunny Deol', 'Bobby Deol', 'Govinda',
+      'Paresh Rawal', 'Om Puri', 'Anupam Kher', 'Naseeruddin Shah', 'Irrfan Khan'
+    ];
 
     // Sample hotel images
     const hotelImages = [
@@ -80,24 +70,7 @@ const seedDatabase = async () => {
       'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=800'
     ];
 
-    // Create hotels first
-    const newHotels = await Promise.all(
-      hotelsData.map(async (hotel, index) => {
-        const normalizedRating = Math.min(hotel.rating / 2, 5);
-        return await Hotel.create({
-          Name: hotel.name,
-          Location: hotel.location,
-          ManagerID: manager._id,
-          Amenities: hotel.amenities || [],
-          Rating: normalizedRating || 0,
-          Image: hotelImages[index % hotelImages.length],
-        });
-      })
-    );
-
-    console.log(`Seeded ${newHotels.length} hotels`);
-
-    // Create 2 rooms for each hotel using aggregation-like logic
+    // Room types
     const roomTypes = [
       { type: 'Standard Room', priceMultiplier: 1, features: ['Free WiFi', 'TV', 'Air Conditioning'] },
       { type: 'Deluxe Room', priceMultiplier: 1.5, features: ['Free WiFi', 'Breakfast included', 'City View', 'Mini Bar'] },
@@ -106,51 +79,85 @@ const seedDatabase = async () => {
       { type: 'Executive Room', priceMultiplier: 2, features: ['Free WiFi', 'Work Desk', 'Coffee Maker', 'City View'] }
     ];
 
-    const allRooms = [];
-    
-    // For each hotel, create 2 rooms
-    for (let i = 0; i < newHotels.length; i++) {
-      const hotel = newHotels[i];
+    // Create admin user first
+    const admin = await User.create({
+      Name: 'Admin',
+      Email: 'admin@hotel.com',
+      email: 'admin@hotel.com',
+      Password: 'admin123',
+      Role: 'admin',
+      ContactNumber: '1234567890',
+    });
+    console.log('Created admin user');
+
+    // Process each hotel
+    for (let i = 0; i < hotelsData.length; i++) {
+      const hotelData = hotelsData[i];
+      const nameIndex = i % indianNames.length;
+
+      // 1. Create manager user for this hotel
+      const manager = await User.create({
+        Name: indianNames[nameIndex],
+        Email: `manager${i + 1}@hotel.com`,
+        email: `manager${i + 1}@hotel.com`,
+        Password: 'manager123',
+        Role: 'manager',
+        ContactNumber: '9999999999',
+      });
+      console.log(`Created manager: ${indianNames[nameIndex]} (manager${i + 1}@hotel.com)`);
+
+      // 2. Create hotel with manager reference
+      const normalizedRating = Math.min(hotelData.rating / 2, 5);
+      const hotel = await Hotel.create({
+        Name: hotelData.name,
+        Location: hotelData.location,
+        ManagerID: manager._id,
+        Amenities: hotelData.amenities || [],
+        Rating: normalizedRating || 0,
+        Image: hotelImages[i % hotelImages.length],
+      });
+      console.log(`Created hotel: ${hotelData.name}`);
+
+      // 3. Create manager profile linking user to hotel
+      await Manager.create({
+        ManagerID: manager._id,
+        HotelID: hotel._id,
+        DateAssigned: Date.now(),
+        Status: 'active'
+      });
+      console.log(`Created manager profile for: ${hotelData.name}`);
+
+      // 4. Create 2-3 rooms for this hotel
+      const basePrice = 200 + (hotel.Rating * 100);
       
-      // Determine base price based on hotel rating (higher rated = more expensive)
-      const basePrice = 3000 + (hotel.Rating * 1000);
-      
-      // Select 2 different room types for this hotel
-      const roomTypeIndex1 = i % roomTypes.length;
-      let roomTypeIndex2 = (i + 1) % roomTypes.length;
-      // Make sure we pick different room types
-      if (roomTypeIndex2 === roomTypeIndex1) {
-        roomTypeIndex2 = (roomTypeIndex1 + 1) % roomTypes.length;
+      // Select 2-3 room types
+      for (let r = 0; r < 2; r++) {
+        const roomTypeIndex = (i + r) % roomTypes.length;
+        const roomType = roomTypes[roomTypeIndex];
+        
+        await Room.create({
+          HotelID: hotel._id,
+          Type: roomType.type,
+          Price: Math.round(basePrice * roomType.priceMultiplier),
+          Availability: r === 0 || Math.random() > 0.2, // First room always available
+          Features: roomType.features,
+          Image: roomImages[r % roomImages.length],
+        });
+        console.log(`Created room: ${roomType.type} for ${hotelData.name}`);
       }
-      
-      const roomType1 = roomTypes[roomTypeIndex1];
-      const roomType2 = roomTypes[roomTypeIndex2];
-      
-      // Create first room
-      const room1 = await Room.create({
-        HotelID: hotel._id,
-        Type: roomType1.type,
-        Price: Math.round(basePrice * roomType1.priceMultiplier),
-        Availability: true,
-        Features: roomType1.features,
-        Image: roomImages[i % roomImages.length],
-      });
-      allRooms.push(room1);
-      
-      // Create second room
-      const room2 = await Room.create({
-        HotelID: hotel._id,
-        Type: roomType2.type,
-        Price: Math.round(basePrice * roomType2.priceMultiplier),
-        Availability: Math.random() > 0.2, // 80% chance available
-        Features: roomType2.features,
-        Image: roomImages[(i + 1) % roomImages.length],
-      });
-      allRooms.push(room2);
     }
 
-    console.log(`Seeded ${allRooms.length} rooms (2 rooms per hotel)`);
-    console.log('Database seeding completed successfully!');
+    console.log('\n=== Database seeding completed successfully! ===');
+    console.log(`Total Hotels: ${hotelsData.length}`);
+    console.log(`Total Managers: ${hotelsData.length}`);
+    console.log(`Total Rooms: ${hotelsData.length * 2}`);
+    console.log('\nManager Login Details:');
+    console.log('Email: manager1@hotel.com to manager' + hotelsData.length + '@hotel.com');
+    console.log('Password: manager123');
+    console.log('\nAdmin Login:');
+    console.log('Email: admin@hotel.com');
+    console.log('Password: admin123');
+
     process.exit(0);
   } catch (error) {
     console.error('Seeding error:', error);
@@ -159,4 +166,3 @@ const seedDatabase = async () => {
 };
 
 seedDatabase();
-

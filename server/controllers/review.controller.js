@@ -155,3 +155,70 @@ export const deleteReview = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
+
+// @desc    Manager respond to review
+// @route   PUT /api/reviews/:id/respond
+// @access  Private (manager)
+export const respondToReview = async (req, res) => {
+  try {
+    const { managerReply } = req.body;
+
+    if (!managerReply) {
+      return res.status(400).json({ success: false, message: 'Manager reply is required' });
+    }
+
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    // Check if user is a manager
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only managers can respond to reviews' });
+    }
+
+    // Add manager reply
+    review.managerReply = managerReply;
+    review.managerReplyDate = new Date();
+    review.managerId = req.user.id;
+    await review.save();
+
+    return res.status(200).json({ 
+      success: true, 
+      data: review,
+      message: 'Response added successfully'
+    });
+  } catch (error) {
+    console.error('Respond to review error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Get reviews for manager's hotel
+// @route   GET /api/reviews/manager/:hotelId
+// @access  Private (manager)
+export const getManagerHotelReviews = async (req, res) => {
+  try {
+    const { hotelId } = req.params;
+
+    // Verify the manager owns this hotel
+    const hotel = await Hotel.findById(hotelId);
+    if (!hotel) {
+      return res.status(404).json({ success: false, message: 'Hotel not found' });
+    }
+
+    // Check if the requesting manager owns this hotel
+    if (req.user.role === 'manager' && hotel.ManagerID?.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view reviews for this hotel' });
+    }
+
+    const reviews = await Review.find({ HotelID: hotelId })
+      .populate('UserID', 'Name Email')
+      .sort({ Timestamp: -1 });
+
+    return res.status(200).json({ success: true, data: reviews });
+  } catch (error) {
+    console.error('Get manager hotel reviews error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};

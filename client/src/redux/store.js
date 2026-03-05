@@ -10,6 +10,7 @@ import paymentReducer from './paymentSlice';
 import reviewReducer from './reviewSlice';
 import redemptionReducer from './redemptionSlice';
 import loyaltyReducer from './loyaltySlice';
+import managerReducer from './managerSlice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -21,12 +22,13 @@ const rootReducer = combineReducers({
   reviews: reviewReducer,
   redemptions: redemptionReducer,
   loyalty: loyaltyReducer,
+  manager: managerReducer,
 });
 
 const persistConfig = {
   key: 'smart-hotel-v2',
   storage,
-  whitelist: ['auth', 'users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty'] // Persist all critical data
+  whitelist: ['auth', 'users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty', 'manager'] // Persist all critical data
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

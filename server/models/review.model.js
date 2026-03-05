@@ -29,6 +29,24 @@ const ReviewSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    // Manager response fields
+    managerReply: {
+      type: String,
+      default: null,
+    },
+    managerReplyDate: {
+      type: Date,
+      default: null,
+    },
+    managerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

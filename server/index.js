@@ -14,6 +14,7 @@ import paymentRouter from "./routes/payment.routes.js";
 import reviewRouter from "./routes/review.routes.js";
 import loyaltyRouter from "./routes/loyalty.routes.js";
 import redemptionRouter from "./routes/redemption.routes.js";
+import managerRouter from "./routes/manager.routes.js";
 
 // Load global .env from project root
 const __filename = fileURLToPath(import.meta.url);
@@ -80,6 +81,9 @@ app.use("/api/loyalty", loyaltyRouter);
 
 // Mount redemption endpoints
 app.use("/api/redemptions", redemptionRouter);
+
+// Mount manager endpoints
+app.use("/api/managers", managerRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

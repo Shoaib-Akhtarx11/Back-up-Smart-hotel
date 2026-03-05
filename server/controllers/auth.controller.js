@@ -1,5 +1,7 @@
 import User from '../models/user.model.js';
 import Booking from '../models/booking.model.js';
+import Manager from '../models/manager.model.js';
+import Hotel from '../models/hotel.model.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 
@@ -15,7 +17,7 @@ const generateToken = (id, role) => {
 // @access  Public
 export const register = async (req, res) => {
   try {
-    const { Name, Email, Password, ConfirmPassword, Role, ContactNumber } = req.body;
+    const { Name, Email, Password, ConfirmPassword, Role, ContactNumber, HotelID } = req.body;
 
     // Validations
     if (!Name || !Email || !Password || !ConfirmPassword || !ContactNumber) {
@@ -30,6 +32,14 @@ export const register = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Password must be at least 8 characters long',
+      });
+    }
+
+    // If registering as manager, HotelID is required
+    if (Role === 'manager' && !HotelID) {
+      return res.status(400).json({
+        success: false,
+        message: 'HotelID is required for manager registration'
       });
     }
 
@@ -51,6 +61,39 @@ export const register = async (req, res) => {
       Role: Role || 'guest',
       ContactNumber,
     });
+
+    // If registering as manager, create manager profile
+    if (Role === 'manager' && HotelID) {
+      try {
+        // Check if hotel exists
+        const hotel = await Hotel.findById(HotelID);
+        if (!hotel) {
+          // User was created, but hotel not found - return success with warning
+          console.warn(`Hotel not found with ID: ${HotelID}`);
+        } else {
+          // Check if hotel already has a manager
+          const existingHotelManager = await Manager.findOne({ HotelID });
+          if (existingHotelManager) {
+            console.warn(`Hotel already has a manager assigned`);
+          } else {
+            // Create manager profile
+            await Manager.create({
+              ManagerID: user._id,
+              HotelID,
+              DateAssigned: Date.now(),
+              Status: 'active'
+            });
+
+            // Update hotel's ManagerID
+            hotel.ManagerID = user._id;
+            await hotel.save();
+          }
+        }
+      } catch (managerError) {
+        console.error('Error creating manager profile:', managerError);
+        // Continue with registration even if manager profile creation fails
+      }
+    }
 
     // Return user without password
     const userResponse = user.toObject();
