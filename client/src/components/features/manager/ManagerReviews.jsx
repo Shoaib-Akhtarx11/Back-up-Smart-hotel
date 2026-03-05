@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { FaStar, FaReply, FaCheck, FaHotel } from 'react-icons/fa';
+import { selectManagerDashboardData } from '../../../redux/managerSlice';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600/api';
 
@@ -11,6 +13,31 @@ const ManagerReviews = ({ hotels }) => {
   const [replyText, setReplyText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   
+  // Get reviews from dashboard data
+  const dashboardData = useSelector(selectManagerDashboardData);
+  const dashboardReviews = dashboardData?.reviews || [];
+  
+  // Initialize reviews from dashboard data
+  useEffect(() => {
+    if (dashboardReviews.length > 0) {
+      // Map dashboard reviews with hotel info
+      const mappedReviews = dashboardReviews.map(review => {
+        const hotel = hotels?.find(h => 
+          (h._id || h.id) === (review.HotelID?._id || review.HotelID)
+        );
+        return {
+          ...review,
+          hotelName: hotel?.Name || review.HotelID?.Name || 'Hotel',
+          hotelId: hotel?._id || hotel?.id || review.HotelID?._id || review.HotelID,
+        };
+      });
+      setReviews(mappedReviews);
+      setLoading(false);
+    } else {
+      setLoading(false);
+    }
+  }, [dashboardReviews, hotels]);
+  
   const getAuthHeader = () => {
     const token = localStorage.getItem('token');
     return {
@@ -20,42 +47,6 @@ const ManagerReviews = ({ hotels }) => {
       },
     };
   };
-
-  useEffect(() => {
-    const fetchReviews = async () => {
-      setLoading(true);
-      try {
-        if (hotels && hotels.length > 0) {
-          const allReviews = [];
-          
-          for (const hotel of hotels) {
-            const hotelId = hotel._id || hotel.id;
-            try {
-              const response = await fetch(`${API_URL}/reviews/manager/${hotelId}`, getAuthHeader());
-              const data = await response.json();
-              if (data.success) {
-                allReviews.push(...data.data.map(r => ({
-                  ...r,
-                  hotelName: hotel.Name,
-                  hotelId: hotelId,
-                })));
-              }
-            } catch (err) {
-              console.error(`Error fetching reviews for hotel ${hotelId}:`, err);
-            }
-          }
-          
-          setReviews(allReviews);
-        }
-      } catch (error) {
-        console.error('Error fetching reviews:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReviews();
-  }, [hotels]);
 
   const avgRating = reviews.length > 0
     ? (reviews.reduce((sum, r) => sum + (r.Rating || r.rating || 0), 0) / reviews.length).toFixed(1)
@@ -90,6 +81,8 @@ const ManagerReviews = ({ hotels }) => {
         setRespondingTo(null);
         setReplyText('');
         alert('Response submitted successfully!');
+      } else {
+        alert(data.message || 'Failed to submit response');
       }
     } catch (error) {
       console.error('Error submitting reply:', error);

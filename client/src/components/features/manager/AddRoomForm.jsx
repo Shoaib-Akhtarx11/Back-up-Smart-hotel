@@ -93,26 +93,24 @@ const AddRoomForm = ({ hotels, onSuccess, onCancel, editRoom }) => {
       const response = await fetch(url, {
         method: editRoom ? 'PUT' : 'POST',
         ...getAuthHeader(),
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          HotelID: formData.HotelID,
+          Type: formData.Type,
+          Price: parseInt(formData.Price),
+          Availability: formData.Availability,
+          Features: formData.Features,
+          Image: formData.Image,
+          NumberOfRooms: parseInt(formData.NumberOfRooms) || 1,
+        }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        const storedRooms = JSON.parse(localStorage.getItem('allRooms') || '[]');
-        const newRoom = { ...data.data, id: data.data._id, hotelId: formData.HotelID };
-        
-        if (editRoom) {
-          const updatedRooms = storedRooms.map(r => 
-            (r._id || r.id) === (editRoom._id || editRoom.id) ? newRoom : r
-          );
-          localStorage.setItem('allRooms', JSON.stringify(updatedRooms));
-        } else {
-          localStorage.setItem('allRooms', JSON.stringify([...storedRooms, newRoom]));
-        }
-        
         if (onSuccess) onSuccess(data.data);
         alert(editRoom ? 'Room updated successfully!' : 'Room added successfully!');
+      } else {
+        setError(data.message || 'Failed to save room');
       }
     } catch (err) {
       console.error('Error saving room:', err);

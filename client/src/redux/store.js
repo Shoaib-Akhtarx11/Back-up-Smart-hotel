@@ -28,7 +28,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: 'smart-hotel-v2',
   storage,
-  whitelist: ['auth', 'users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty', 'manager'] // Persist all critical data
+  whitelist: ['users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty', 'manager'] // Auth should NOT be persisted - validate with server on each load
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

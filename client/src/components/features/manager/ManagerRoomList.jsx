@@ -1,45 +1,46 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaBed, FaEdit, FaTrash, FaPlus, FaSearch, FaHotel } from 'react-icons/fa';
+import { FaBed, FaEdit, FaTrash, FaPlus, FaSearch, FaHotel, FaEye } from 'react-icons/fa';
+import { fetchManagerDashboardData, selectManagerDashboardData } from '../../../redux/managerSlice';
+import ViewRoomModal from './ViewRoomModal';
 
-const ManagerRoomList = ({ hotels, onAddRoom, onEditRoom, onDeleteRoom }) => {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600/api';
+
+const ManagerRoomList = ({ onAddRoom, onEditRoom, onDeleteRoom }) => {
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedHotel, setSelectedHotel] = useState('all');
+  const [viewingRoom, setViewingRoom] = useState(null);
+
+  const handleView = (room) => {
+    setViewingRoom(room);
+  };
+
+  const handleViewEdit = (room) => {
+    setViewingRoom(null);
+    if (onEditRoom) {
+      onEditRoom(room);
+    }
+  };
   
-  // Get data from Redux
-  const allRooms = useSelector((state) => state.rooms?.allRooms || []);
+  // Get data directly from Redux manager slice
+  const dashboardData = useSelector(selectManagerDashboardData);
+  
+  // Get hotels and rooms from dashboard data
+  const hotels = dashboardData?.hotels || [];
+  const rooms = dashboardData?.rooms || [];
   
   // Get manager's hotel IDs
   const managerHotelIds = hotels.map(h => h._id || h.id);
   
   // Filter rooms for manager's hotels
-  const managerRooms = allRooms.filter(room => {
+  const managerRooms = rooms.filter(room => {
     const roomHotelId = room.HotelID?._id || room.HotelID || room.hotelId;
     return managerHotelIds.includes(roomHotelId) || managerHotelIds.includes(String(roomHotelId));
   });
   
-  // Get rooms from localStorage too
-  const getAllManagerRooms = () => {
-    const storedRooms = JSON.parse(localStorage.getItem('allRooms') || '[]');
-    const reduxRooms = managerRooms;
-    
-    const roomMap = new Map();
-    reduxRooms.forEach(r => roomMap.set(r._id || r.id, r));
-    storedRooms.forEach(r => {
-      const roomHotelId = r.HotelID?._id || r.HotelID || r.hotelId;
-      if (managerHotelIds.includes(roomHotelId) || managerHotelIds.includes(String(roomHotelId))) {
-        roomMap.set(r._id || r.id, r);
-      }
-    });
-    
-    return Array.from(roomMap.values());
-  };
-  
-  const allManagerRooms = getAllManagerRooms();
-  
   // Filter rooms
-  const filteredRooms = allManagerRooms.filter(room => {
+  const filteredRooms = managerRooms.filter(room => {
     const hotel = hotels.find(h => (h._id || h.id) === (room.HotelID?._id || room.HotelID || room.hotelId));
     const hotelName = hotel?.Name || '';
     
@@ -53,16 +54,46 @@ const ManagerRoomList = ({ hotels, onAddRoom, onEditRoom, onDeleteRoom }) => {
     return matchesSearch && matchesHotel;
   });
 
+  // Helper function to get auth header
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    };
+  };
+
   const getHotelName = (hotelId) => {
     const hotel = hotels.find(h => (h._id || h.id) === (hotelId?._id || hotelId));
     return hotel?.Name || 'Unknown Hotel';
   };
 
-  const handleDelete = (roomId) => {
+  const handleDelete = async (roomId) => {
     if (window.confirm('Are you sure you want to delete this room?')) {
-      if (onDeleteRoom) {
-        onDeleteRoom(roomId);
+      try {
+        const response = await fetch(`${API_URL}/rooms/${roomId}`, {
+          method: 'DELETE',
+          ...getAuthHeader(),
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert('Room deleted successfully!');
+          dispatch(fetchManagerDashboardData());
+        } else {
+          alert(data.message || 'Failed to delete room');
+        }
+      } catch (err) {
+        console.error('Error deleting room:', err);
+        alert('Failed to delete room. Please try again.');
       }
+    }
+  };
+
+  const handleEdit = (room) => {
+    if (onEditRoom && onEditRoom.onEdit) {
+      onEditRoom.onEdit(room);
     }
   };
 
@@ -174,8 +205,14 @@ const ManagerRoomList = ({ hotels, onAddRoom, onEditRoom, onDeleteRoom }) => {
                 <div className="card-footer bg-white border-top-0">
                   <div className="d-flex gap-2">
                     <button
+                      className="btn btn-sm btn-outline-primary flex-grow-1"
+                      onClick={() => handleView(room)}
+                    >
+                      <FaEye className="me-1" /> View
+                    </button>
+                    <button
                       className="btn btn-sm btn-outline-secondary flex-grow-1"
-                      onClick={() => onEditRoom && onEditRoom.onEdit(room)}
+                      onClick={() => handleEdit(room)}
                     >
                       <FaEdit className="me-1" /> Edit
                     </button>
@@ -206,6 +243,16 @@ const ManagerRoomList = ({ hotels, onAddRoom, onEditRoom, onDeleteRoom }) => {
             </button>
           )}
         </div>
+      )}
+
+      {/* View Room Modal */}
+      {viewingRoom && (
+        <ViewRoomModal 
+          room={viewingRoom}
+          hotelName={getHotelName(viewingRoom.HotelID?._id || viewingRoom.HotelID || viewingRoom.hotelId)}
+          onClose={() => setViewingRoom(null)}
+          onEdit={handleViewEdit}
+        />
       )}
     </div>
   );

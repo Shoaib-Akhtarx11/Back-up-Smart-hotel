@@ -1,6 +1,7 @@
 
 import Payment from '../models/payment.model.js';
 import Booking from '../models/booking.model.js';
+import Room from '../models/room.model.js';
 import LoyaltyAccount from '../models/loyalty.model.js';
 import Redemption from '../models/redemption.model.js';
 
@@ -40,6 +41,13 @@ export const createPayment = async (req, res) => {
     // Update booking status to success
     booking.Status = 'success';
     booking.PaymentID = payment._id;
+    
+    // FIX: Set room availability to false only when payment is confirmed
+    const room = await Room.findById(booking.RoomID);
+    if (room) {
+      room.Availability = false;
+      await room.save();
+    }
     
     // Process redemption if points were used
     if (redemptionPointsUsed > 0) {

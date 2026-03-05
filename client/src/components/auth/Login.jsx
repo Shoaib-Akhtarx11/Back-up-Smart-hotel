@@ -114,7 +114,8 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
       if (res.ok && data.success) {
         const { user, token } = data;
 
-        // Save token to localStorage for API requests
+        // Store token - rely primarily on HTTP-only cookie, but keep localStorage as backup for API calls
+        // The server already sends token as HTTP-only cookie, this is redundant but kept for compatibility
         if (token) {
           localStorage.setItem('token', token);
         }
@@ -123,11 +124,14 @@ const Login = ({ onSuccess, onSwitchToRegister }) => {
 
         if (onSuccess) onSuccess();
         
+        // Normalize role to lowercase for consistent comparison
+        const normalizedRole = (user.Role || user.role || 'guest').toLowerCase();
+        
         if (redirectTo) {
           navigate(redirectTo);
-        } else if (user.Role === "admin") {
+        } else if (normalizedRole === "admin") {
           navigate("/admin");
-        } else if (user.Role === "manager") {
+        } else if (normalizedRole === "manager") {
           navigate("/manager");
         } else {
           navigate("/");

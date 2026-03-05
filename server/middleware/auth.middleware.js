@@ -24,10 +24,17 @@ export const protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'smart_hotel_booking_system');
 
-      // The JWT contains 'role' (lowercase) from auth.controller.js
+      // Fetch user to get the actual role (handle both 'Role' from DB and 'role' from token)
+      const user = await User.findById(decoded.id);
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'User not found' });
+      }
+
+      // Use the role from database (capital R) and normalize to lowercase for consistency
+      // The User model uses 'Role' (capital R), so we normalize it to lowercase
       req.user = {
         id: decoded.id,
-        role: decoded.role
+        role: (user.Role || decoded.role || 'guest').toLowerCase()
       };
       next();
     } catch (err) {
@@ -38,13 +45,17 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// Authorize specific roles
+// Authorize specific roles - roles should be lowercase
 export const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    // Normalize role to lowercase for comparison
+    const userRole = (req.user.role || '').toLowerCase();
+    const allowedRoles = roles.map(r => r.toLowerCase());
+    
+    if (!allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: `User role '${req.user.role}' is not authorized to access this route`,
+        message: `User role '${userRole}' is not authorized to access this route`,
       });
     }
     next();

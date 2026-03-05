@@ -6,8 +6,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
   const location = useLocation();
   
-  // Get role from user object (capital R)
-  const role = user?.Role || user?.role || 'guest';
+  // FIX: Normalize role to lowercase for consistent comparison
+  // User model uses 'Role' (capital R), but we normalize to lowercase
+  const role = (user?.Role || user?.role || 'guest').toLowerCase();
 
   try {
     // 1. Show nothing (or a spinner) while checking auth status
@@ -26,7 +27,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     }
 
     // 3. If logged in but doesn't have the right role (e.g., Guest trying to see Admin)
-    if (allowedRoles && !allowedRoles.includes(role)) {
+    // Normalize allowed roles to lowercase
+    const normalizedAllowedRoles = allowedRoles?.map(r => r.toLowerCase()) || [];
+    if (allowedRoles && !normalizedAllowedRoles.includes(role)) {
       return (
         <Navigate
           to="/error"

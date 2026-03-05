@@ -1,6 +1,6 @@
-import Manager from '../models/manager.model.js';
+import Hotel from '../models/hotel.model.js';
 
-// @desc    Verify if user has manager role and has a manager profile
+// @desc    Verify if user has manager role and has access to any hotel
 // @access  Private
 export const verifyManager = async (req, res, next) => {
   try {
@@ -12,26 +12,19 @@ export const verifyManager = async (req, res, next) => {
       });
     }
 
-    // Check if manager profile exists
-    const manager = await Manager.findOne({ ManagerID: req.user.id });
+    // Check if user manages any hotel (Hotels now directly reference User._id)
+    const hotel = await Hotel.findOne({ ManagerID: req.user.id });
 
-    if (!manager) {
+    if (!hotel) {
       return res.status(404).json({
         success: false,
-        message: 'Manager profile not found. Please contact administrator.'
+        message: 'No hotel assigned to this manager. Please contact administrator.'
       });
     }
 
-    // Check if manager is active
-    if (manager.Status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        message: 'Your manager account is inactive. Please contact administrator.'
-      });
-    }
-
-    // Attach manager profile to request
-    req.manager = manager;
+    // Attach hotel to request for later use
+    req.managerHotel = hotel;
+    req.managerHotelId = hotel._id;
     next();
   } catch (error) {
     console.error('Verify manager error:', error);
@@ -42,11 +35,11 @@ export const verifyManager = async (req, res, next) => {
   }
 };
 
-// @desc    Verify manager owns the hotel
+// @desc    Verify manager owns the hotel they are trying to access
 // @access  Private
 export const verifyManagerHotelOwnership = async (req, res, next) => {
   try {
-    // First run verifyManager middleware
+    // First check if user has manager role
     if (req.user.role !== 'manager') {
       return res.status(403).json({
         success: false,
@@ -54,36 +47,38 @@ export const verifyManagerHotelOwnership = async (req, res, next) => {
       });
     }
 
-    const manager = await Manager.findOne({ ManagerID: req.user.id });
-
-    if (!manager) {
-      return res.status(404).json({
-        success: false,
-        message: 'Manager profile not found.'
-      });
-    }
-
-    if (manager.Status !== 'active') {
-      return res.status(403).json({
-        success: false,
-        message: 'Your manager account is inactive.'
-      });
-    }
-
     // Get hotel ID from request params or body
     const hotelId = req.params.hotelId || req.body.hotelId || req.params.id;
 
-    // Check if the manager owns the hotel
-    if (hotelId && manager.HotelID.toString() !== hotelId) {
+    if (!hotelId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Hotel ID is required'
+      });
+    }
+
+    // Check if the manager owns this specific hotel
+    // Hotels now directly reference User._id in ManagerID field
+    const hotel = await Hotel.findById(hotelId);
+
+    if (!hotel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hotel not found.'
+      });
+    }
+
+    // Check if the requesting user is the owner of this hotel OR is an admin
+    if (hotel.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'You are not authorized to manage this hotel.'
       });
     }
 
-    // Attach manager profile and hotel ID to request
-    req.manager = manager;
-    req.managerHotelId = manager.HotelID;
+    // Attach hotel to request
+    req.managerHotel = hotel;
+    req.managerHotelId = hotel._id;
     next();
   } catch (error) {
     console.error('Verify manager hotel ownership error:', error);

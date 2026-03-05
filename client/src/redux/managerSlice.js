@@ -4,11 +4,8 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5600";
 
 // Helper function to get auth header
 const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
   return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-    },
+    credentials: 'include', // Include cookies for authentication
   };
 };
 
@@ -34,6 +31,7 @@ export const fetchManagerDashboardData = createAsyncThunk(
     if (!data.success) {
       throw new Error(data.message || 'Failed to fetch dashboard data');
     }
+    console.log(data)
     return data.data;
   }
 );

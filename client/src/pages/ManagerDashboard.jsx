@@ -39,8 +39,8 @@ const ManagerDashboard = () => {
     }
   }
 
-  // Get role
-  const userRole = auth.role || localStorage.getItem('activeRole');
+  // Get role from user object
+  const userRole = auth.user?.Role || localStorage.getItem('activeRole');
 
   // Get ALL data from the new API (no localStorage)
   const dashboardData = useSelector(selectManagerDashboardData);
@@ -168,6 +168,66 @@ const ManagerDashboard = () => {
       } catch (err) {
         console.error('Error deleting room:', err);
         alert('Failed to delete room. Please try again.');
+      }
+    }
+  };
+
+  // Handler for approving a booking
+  const handleApproveBooking = async (bookingId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5600/api'}/bookings/${bookingId}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
+          body: JSON.stringify({ Status: 'confirmed' }),
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        alert('Booking approved successfully!');
+        // Refresh dashboard data
+        dispatch(fetchManagerDashboardData());
+      } else {
+        alert(data.message || 'Failed to approve booking');
+      }
+    } catch (err) {
+      console.error('Error approving booking:', err);
+      alert('Failed to approve booking. Please try again.');
+    }
+  };
+
+  // Handler for disapproving/cancelling a booking
+  const handleDisapproveBooking = async (bookingId) => {
+    if (window.confirm('Are you sure you want to disapprove this booking?')) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL || 'http://localhost:5600/api'}/bookings/${bookingId}/status`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : '',
+            },
+            body: JSON.stringify({ Status: 'cancelled' }),
+          }
+        );
+        const data = await response.json();
+        if (data.success) {
+          alert('Booking disapproved successfully!');
+          // Refresh dashboard data
+          dispatch(fetchManagerDashboardData());
+        } else {
+          alert(data.message || 'Failed to disapprove booking');
+        }
+      } catch (err) {
+        console.error('Error disapproving booking:', err);
+        alert('Failed to disapprove booking. Please try again.');
       }
     }
   };
@@ -402,9 +462,6 @@ const ManagerDashboard = () => {
             <div className="card-body p-4">
               <ManagerHotelList 
                 onAddHotel={handleAddHotel}
-                onEditHotel={handleEditHotel}
-                onViewHotel={handleViewHotel}
-                hotels={managerHotels}
               />
             </div>
           </div>
@@ -415,11 +472,8 @@ const ManagerDashboard = () => {
           <div className="card shadow-sm border-0 rounded-bottom-4">
             <div className="card-body p-4">
               <ManagerRoomList 
-                hotels={managerHotels}
-                rooms={managerRooms}
                 onAddRoom={handleAddRoom}
                 onEditRoom={{ onEdit: handleEditRoom }}
-                onDeleteRoom={handleDeleteRoom}
               />
             </div>
           </div>
@@ -448,6 +502,7 @@ const ManagerDashboard = () => {
                         const statusClass = booking.Status === 'confirmed' || booking.Status === 'Confirmed' ? 'bg-success' :
                                            booking.Status === 'cancelled' || booking.Status === 'Cancelled' ? 'bg-danger' : 'bg-warning';
                         const isApproved = booking.Status === 'confirmed' || booking.Status === 'Confirmed';
+                        const isCancelled = booking.Status === 'cancelled' || booking.Status === 'Cancelled';
                         
                         return (
                           <tr key={booking._id || booking.BookingID}>
@@ -461,12 +516,16 @@ const ManagerDashboard = () => {
                               <button
                                 className="btn btn-sm btn-outline-success me-1"
                                 disabled={isApproved}
+                                onClick={() => handleApproveBooking(booking._id)}
+                                title={isApproved ? 'Already approved' : 'Approve this booking'}
                               >
                                 Approve
                               </button>
                               <button
                                 className="btn btn-sm btn-outline-danger"
-                                disabled={booking.Status === 'cancelled' || booking.Status === 'Cancelled'}
+                                disabled={isCancelled}
+                                onClick={() => handleDisapproveBooking(booking._id)}
+                                title={isCancelled ? 'Already cancelled' : 'Cancel this booking'}
                               >
                                 Disapprove
                               </button>

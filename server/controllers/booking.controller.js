@@ -24,9 +24,9 @@ export const createBooking = async (req, res) => {
     if (!room) {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
-    if (!room.Availability) {
-      return res.status(400).json({ success: false, message: 'Room is not available' });
-    }
+    // FIX: Don't mark room unavailable here - check availability at payment time
+    // This prevents blocking the room during the payment process
+    // Room will be marked unavailable in payment controller upon successful payment
 
     // Calculate redemption discount (1 point = 10 rupees)
     const redemptionDiscountAmount = RedemptionPointsUsed ? RedemptionPointsUsed * 10 : 0;
@@ -43,17 +43,16 @@ export const createBooking = async (req, res) => {
       RedemptionDiscountAmount: redemptionDiscountAmount
     });
 
-    // Note: Loyalty points are added in the payment controller when payment is confirmed
-    // to avoid double counting
+    // Note: Loyalty points and room availability are handled in the payment controller
+    // when payment is confirmed to avoid double counting and ensure proper flow
 
-    // Mark room as unavailable (in a real system, you might track individual room instances)
-    room.Availability = false;
-    await room.save();
+    // Populate the booking with room details for response
+    await booking.populate('RoomID');
 
     return res.status(201).json({ 
       success: true, 
       data: booking,
-      message: 'Booking created successfully' 
+      message: 'Booking created successfully. Please complete payment to confirm.' 
     });
   } catch (error) {
     console.error('Create booking error:', error);
@@ -204,6 +203,76 @@ export const cancelBooking = async (req, res) => {
     });
   } catch (error) {
     console.error('Cancel booking error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
+// @desc    Update booking status (for managers to approve/disapprove)
+// @route   PUT /api/bookings/:id/status
+// @access  Private (manager, admin)
+export const updateBookingStatus = async (req, res) => {
+  try {
+    const { Status } = req.body;
+    const { id } = req.params;
+
+    if (!Status) {
+      return res.status(400).json({ success: false, message: 'Status is required' });
+    }
+
+    // Validate status
+    const validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
+    if (!validStatuses.includes(Status.toLowerCase())) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid status. Must be one of: pending, confirmed, cancelled, completed' 
+      });
+    }
+
+    const booking = await Booking.findById(id)
+      .populate({
+        path: 'RoomID',
+        populate: { path: 'HotelID' }
+      });
+
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Booking not found' });
+    }
+
+    // Check if user is a manager for this hotel
+    if (req.user.role === 'manager') {
+      const hotelId = booking.RoomID?.HotelID?._id || booking.RoomID?.HotelID;
+      const hotel = await import('../models/hotel.model.js').then(m => m.default.findById(hotelId));
+      
+      if (!hotel || hotel.ManagerID?.toString() !== req.user.id) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Not authorized to update bookings for this hotel' 
+        });
+      }
+    }
+
+    // Update booking status
+    booking.Status = Status;
+    await booking.save();
+
+    // If confirmed, mark room as unavailable; if cancelled, make room available again
+    const room = await Room.findById(booking.RoomID);
+    if (room) {
+      if (Status === 'confirmed') {
+        room.Availability = false;
+      } else if (Status === 'cancelled') {
+        room.Availability = true;
+      }
+      await room.save();
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      data: booking,
+      message: `Booking ${Status} successfully`
+    });
+  } catch (error) {
+    console.error('Update booking status error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };

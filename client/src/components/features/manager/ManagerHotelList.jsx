@@ -1,54 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaBuilding, FaEdit, FaTrash, FaPlus, FaEye } from 'react-icons/fa';
+import { fetchManagerDashboardData, selectManagerDashboardData } from '../../../redux/managerSlice';
+import EditHotelModal from './EditHotelModal';
+import ViewHotelModal from './ViewHotelModal';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600/api';
 
 const ManagerHotelList = ({ onAddHotel, onEditHotel, onViewHotel }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingHotel, setEditingHotel] = useState(null);
+  const [viewingHotel, setViewingHotel] = useState(null);
   
-  // Get data from Redux
-  const auth = useSelector((state) => state.auth);
-  const allHotels = useSelector((state) => state.hotels?.allHotels || []);
+  // Get data directly from Redux manager slice
+  const dashboardData = useSelector(selectManagerDashboardData);
+  const managerState = useSelector((state) => state.manager);
   
-  // Get current manager
-  const currentManager = auth.user;
-  let managerId = currentManager?._id || currentManager?.id;
-  
-  // Try to get from localStorage if not in Redux
-  if (!managerId) {
-    try {
-      const storedUser = localStorage.getItem('activeUser');
-      if (storedUser) {
-        const parsed = JSON.parse(storedUser);
-        managerId = parsed._id || parsed.id;
-      }
-    } catch (e) {
-      console.error('Error getting manager ID:', e);
-    }
-  }
-
-  // Get hotels from localStorage as well
-  const getManagerHotels = () => {
-    const reduxHotels = allHotels || [];
-    const storedHotels = JSON.parse(localStorage.getItem('allHotels') || '[]');
-    
-    // Merge hotels
-    const hotelMap = new Map();
-    reduxHotels.forEach(h => hotelMap.set(h._id || h.id, h));
-    storedHotels.forEach(h => hotelMap.set(h._id || h.id, h));
-    
-    const allHotelsFromBoth = Array.from(hotelMap.values());
-    
-    // Filter by manager ID (check both _id and id fields)
-    return allHotelsFromBoth.filter(hotel => {
-      const hotelManagerId = hotel.ManagerID?._id || hotel.ManagerID || hotel.managerId;
-      return hotelManagerId === managerId || hotelManagerId === String(managerId);
-    });
-  };
-
-  const managerHotels = getManagerHotels();
+  // Get hotels from dashboard data
+  const managerHotels = dashboardData?.hotels || [];
   
   // Filter hotels by search term
   const filteredHotels = managerHotels.filter(hotel =>
@@ -56,13 +28,55 @@ const ManagerHotelList = ({ onAddHotel, onEditHotel, onViewHotel }) => {
     hotel.Location?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (hotelId) => {
+  // Helper function to get auth header
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    };
+  };
+
+  const handleDelete = async (hotelId) => {
     if (window.confirm('Are you sure you want to delete this hotel? This action cannot be undone.')) {
-      // Call parent handler
-      if (onEditHotel?.onDelete) {
-        onEditHotel.onDelete(hotelId);
+      try {
+        const response = await fetch(`${API_URL}/hotels/${hotelId}`, {
+          method: 'DELETE',
+          ...getAuthHeader(),
+        });
+        const data = await response.json();
+        if (data.success) {
+          alert('Hotel deleted successfully!');
+          // Refresh the dashboard data
+          dispatch(fetchManagerDashboardData());
+        } else {
+          alert(data.message || 'Failed to delete hotel');
+        }
+      } catch (err) {
+        console.error('Error deleting hotel:', err);
+        alert('Failed to delete hotel. Please try again.');
       }
     }
+  };
+
+  const handleEdit = (hotel) => {
+    setEditingHotel(hotel);
+  };
+
+  const handleView = (hotel) => {
+    setViewingHotel(hotel);
+  };
+
+  const handleEditSuccess = () => {
+    setEditingHotel(null);
+    dispatch(fetchManagerDashboardData());
+  };
+
+  const handleViewEdit = (hotel) => {
+    setViewingHotel(null);
+    setEditingHotel(hotel);
   };
 
   return (
@@ -128,13 +142,13 @@ const ManagerHotelList = ({ onAddHotel, onEditHotel, onViewHotel }) => {
                   <div className="d-flex gap-2">
                     <button
                       className="btn btn-sm btn-outline-primary flex-grow-1"
-                      onClick={() => onViewHotel && onViewHotel(hotel)}
+                      onClick={() => handleView(hotel)}
                     >
                       <FaEye className="me-1" /> View
                     </button>
                     <button
                       className="btn btn-sm btn-outline-secondary flex-grow-1"
-                      onClick={() => onEditHotel && onEditHotel.onEdit(hotel)}
+                      onClick={() => handleEdit(hotel)}
                     >
                       <FaEdit className="me-1" /> Edit
                     </button>
@@ -163,6 +177,24 @@ const ManagerHotelList = ({ onAddHotel, onEditHotel, onViewHotel }) => {
             </button>
           )}
         </div>
+      )}
+
+      {/* Edit Hotel Modal */}
+      {editingHotel && (
+        <EditHotelModal 
+          hotel={editingHotel}
+          onClose={() => setEditingHotel(null)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {/* View Hotel Modal */}
+      {viewingHotel && (
+        <ViewHotelModal 
+          hotel={viewingHotel}
+          onClose={() => setViewingHotel(null)}
+          onEdit={handleViewEdit}
+        />
       )}
     </div>
   );

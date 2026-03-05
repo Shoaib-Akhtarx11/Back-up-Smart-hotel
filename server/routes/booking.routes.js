@@ -6,6 +6,7 @@ import {
   updateBooking,
   cancelBooking,
   getBookingDetails,
+  updateBookingStatus,
 } from '../controllers/booking.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 
@@ -20,6 +21,9 @@ router.put('/:id/cancel', cancelBooking);
 
 // New route for getting booking details with full information
 router.get('/:id/details', protect, getBookingDetails);
+
+// New route for manager to update booking status (approve/disapprove)
+router.put('/:id/status', protect, authorize('manager', 'admin'), updateBookingStatus);
 
 router.route('/:id')
   .get(protect, getBooking)

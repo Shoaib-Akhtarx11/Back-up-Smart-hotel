@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { fetchHotels } from '../redux/hotelSlice';
 import NavBar from '../components/layout/NavBar';
 import Footer from '../components/layout/Footer';
@@ -13,6 +13,7 @@ const AddHotel = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     
     // Get current user and all users from auth state
     const auth = useSelector((state) => state.auth);
@@ -30,26 +31,59 @@ const AddHotel = () => {
     
     const managers = getManagers();
     
-    // Check if editing
-    const editHotel = location.state?.editHotel;
-    const isEditing = location.state?.isEditing || false;
+    // Check if editing - support both query param and state
+    const editHotelFromState = location.state?.editHotel;
+    const editHotelIdFromQuery = searchParams.get('edit');
+    const [fetchedHotel, setFetchedHotel] = useState(null);
+    const [loadingHotel, setLoadingHotel] = useState(false);
     
-    // Form state
+    // Check if editing from query parameter
+    const isEditingFromQuery = !!editHotelIdFromQuery;
+    
+    // Fetch hotel data if editing from query param
+    useEffect(() => {
+        if (editHotelIdFromQuery) {
+            setLoadingHotel(true);
+            fetch(`${API_BASE}/api/hotels/${editHotelIdFromQuery}`, {
+                method: 'GET',
+                credentials: 'include',
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data) {
+                    setFetchedHotel(data.data);
+                }
+                setLoadingHotel(false);
+            })
+            .catch(err => {
+                console.error('Error fetching hotel:', err);
+                setLoadingHotel(false);
+            });
+        }
+    }, [editHotelIdFromQuery]);
+    
+    // Determine if we are editing
+    const isEditing = location.state?.isEditing || isEditingFromQuery;
+    
+    // Get the hotel to edit - prefer state, then fetched data
+    const editHotel = editHotelFromState || fetchedHotel;
+    
+    // Form state - load data from editHotel if available
     const [formData, setFormData] = useState({
-        name: editHotel?.name || '',
-        location: editHotel?.location || '',
-        rating: editHotel?.rating || 5.0,
+        name: editHotel?.Name || editHotel?.name || '',
+        location: editHotel?.Location || editHotel?.location || '',
+        rating: editHotel?.Rating || editHotel?.rating || 5.0,
         reviewsCount: editHotel?.reviewsCount || 0,
         tag: editHotel?.tag || 'New',
-        image: editHotel?.image || '',
+        image: editHotel?.Image || editHotel?.image || '',
         offer: editHotel?.offer || 'Welcome Offer',
         features: editHotel?.features || [],
-        amenities: editHotel?.amenities || [],
+        amenities: editHotel?.Amenities || editHotel?.amenities || [],
         managerId: editHotel?.managerId || (isAdmin ? '' : currentManager?.id)
     });
     
-    const [selectedFeatures, setSelectedFeatures] = useState(editHotel?.features || []);
-    const [selectedAmenities, setSelectedAmenities] = useState(editHotel?.amenities || []);
+    const [selectedFeatures, setSelectedFeatures] = useState(editHotel?.features || editHotel?.Features || []);
+    const [selectedAmenities, setSelectedAmenities] = useState(editHotel?.amenities || editHotel?.Amenities || []);
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState('');
     
@@ -239,7 +273,15 @@ const AddHotel = () => {
                         </div>
                     )}
                     
-                    {/* Form */}
+                    {/* Loading state for fetching hotel data */}
+                    {loadingHotel ? (
+                        <div className="text-center py-5">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+                            <p className="mt-3 text-muted">Loading hotel data...</p>
+                        </div>
+                    ) : (
                     <div className="card border-0 shadow-sm rounded-4">
                         <div className="card-body p-4">
                             <form onSubmit={handleSubmit}>
@@ -435,7 +477,9 @@ const AddHotel = () => {
                             </form>
                         </div>
                     </div>
+                    )}
                 </div>
+            
             </div>
             
             <Footer />

@@ -16,7 +16,8 @@ const NavBar = ({ isHomePage = false }) => {
   const dispatch = useDispatch();
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
-  const role = user?.role || user?.Role || "guest";
+  // FIX: Normalize role to lowercase for consistent comparison
+  const role = (user?.role || user?.Role || "guest").toLowerCase();
 
   const handleLogout = () => {
     dispatch(logout());

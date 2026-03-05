@@ -1,3 +1,4 @@
+
 import Hotel from '../models/hotel.model.js';
 import Room from '../models/room.model.js';
 
@@ -12,6 +13,8 @@ export const createHotel = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Name and Location are required' });
     }
 
+    // Create hotel with ManagerID = current user's ID
+    // Hotel now directly references User._id
     const hotel = await Hotel.create({
       Name,
       Location,
@@ -57,7 +60,6 @@ export const getHotels = async (req, res) => {
             else: null
           }
         },
-        // Also get available rooms count
         availableRoomsCount: {
           $size: {
             $filter: {
@@ -73,19 +75,16 @@ export const getHotels = async (req, res) => {
     // Stage 3: Build match conditions for filtering
     const matchConditions = {};
 
-    // Filter by location
     if (location && location !== 'Any region') {
       matchConditions.Location = { $regex: location, $options: 'i' };
     }
 
-    // Filter by price range (using minPrice)
     if (priceMin || priceMax) {
       matchConditions.minPrice = {};
       if (priceMin) matchConditions.minPrice.$gte = Number(priceMin);
       if (priceMax) matchConditions.minPrice.$lte = Number(priceMax);
     }
 
-    // Filter by search query (name or location)
     if (searchQuery) {
       matchConditions.$or = [
         { Name: { $regex: searchQuery, $options: 'i' } },
@@ -93,13 +92,11 @@ export const getHotels = async (req, res) => {
       ];
     }
 
-    // Filter by features (amenities)
     if (features) {
       const featureList = features.split(',');
       matchConditions.Amenities = { $all: featureList };
     }
 
-    // Add match stage if we have conditions
     if (Object.keys(matchConditions).length > 0) {
       pipeline.push({ $match: matchConditions });
     }
@@ -117,7 +114,6 @@ export const getHotels = async (req, res) => {
         sortStage = { Rating: -1 };
         break;
       default:
-        // Default sort - keep original order
         sortStage = { _id: 1 };
     }
     pipeline.push({ $sort: sortStage });
@@ -161,9 +157,13 @@ export const updateHotel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
 
-    // Only manager who owns hotel or admin can update
-    if (hotel.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+    // FIX: Proper ownership validation - manager can only update their own hotels
+    // Admin can update any hotel
+    const isOwner = hotel.ManagerID.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update this hotel' });
     }
 
     const { Name, Location, Amenities, Rating, Image } = req.body;
@@ -192,15 +192,24 @@ export const deleteHotel = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Hotel not found' });
     }
 
-    if (hotel.ManagerID.toString() !== req.user.id && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
+    // FIX: Proper ownership validation - manager can only delete their own hotels
+    // Admin can delete any hotel
+    const isOwner = hotel.ManagerID.toString() === req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this hotel' });
     }
 
+    // Also delete all rooms for this hotel
+    await Room.deleteMany({ HotelID: hotel._id });
+    
     await Hotel.findByIdAndDelete(req.params.id);
 
-    return res.status(200).json({ success: true, message: 'Hotel deleted' });
+    return res.status(200).json({ success: true, message: 'Hotel and all its rooms deleted' });
   } catch (error) {
     console.error('Delete hotel error:', error);
     return res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
+

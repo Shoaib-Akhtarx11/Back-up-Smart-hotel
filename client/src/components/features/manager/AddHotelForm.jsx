@@ -73,36 +73,26 @@ const AddHotelForm = ({ onSuccess, onCancel }) => {
 
     setLoading(true);
     try {
-      let managerId = '';
-      try {
-        const storedUser = localStorage.getItem('activeUser');
-        if (storedUser) {
-          const parsed = JSON.parse(storedUser);
-          managerId = parsed._id || parsed.id;
-        }
-      } catch (e) {
-        console.error('Error getting manager ID:', e);
-      }
-
+      // Don't send ManagerID - backend gets it from auth middleware
       const response = await fetch(`${API_URL}/hotels`, {
         method: 'POST',
         ...getAuthHeader(),
         body: JSON.stringify({
-          ...formData,
+          Name: formData.Name,
+          Location: formData.Location,
+          Image: formData.Image,
+          Amenities: formData.Amenities,
           Rating: parseFloat(formData.Rating) || 0,
-          ManagerID: managerId,
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        const storedHotels = JSON.parse(localStorage.getItem('allHotels') || '[]');
-        const newHotel = { ...data.data, id: data.data._id, managerId: managerId };
-        localStorage.setItem('allHotels', JSON.stringify([...storedHotels, newHotel]));
-
         if (onSuccess) onSuccess(data.data);
         alert('Hotel added successfully!');
+      } else {
+        setError(data.message || 'Failed to add hotel');
       }
     } catch (err) {
       console.error('Error adding hotel:', err);

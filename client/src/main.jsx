@@ -4,11 +4,15 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { BrowserRouter } from 'react-router-dom'; // Crucial for useNavigate()
 import { store, persistor } from './redux/store';
+import { checkAuth } from './redux/authSlice';
 import App from './App';
 
 // CSS Imports
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css'; 
+
+// Check authentication on app load
+store.dispatch(checkAuth());
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

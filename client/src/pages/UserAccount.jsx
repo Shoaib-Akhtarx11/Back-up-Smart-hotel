@@ -67,22 +67,10 @@ const UserAccount = () => {
   const loadUserData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      
-      if (!token) {
-        console.error("No token found");
-        setLoading(false);
-        return;
-      }
-
       // Fetch user account data from backend using aggregation
       const response = await fetch(`${API_URL}/api/auth/account-data`, {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include'
+        credentials: 'include' // Use cookies for authentication
       });
 
       // Handle 401 - redirect to login
@@ -130,19 +118,10 @@ const UserAccount = () => {
   const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      
-      if (!token) {
-        console.error("No token found");
-        setLoading(false);
-        return;
-      }
-
-      // Call backend API to update profile
+      // Call backend API to update profile using cookies
       const response = await fetch(`${API_URL}/api/auth/update-profile`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         credentials: 'include',
