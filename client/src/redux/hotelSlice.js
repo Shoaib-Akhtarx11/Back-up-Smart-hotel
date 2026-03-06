@@ -33,7 +33,6 @@ export const fetchHotels = createAsyncThunk('hotels/fetchHotels', async (filters
     credentials: 'include'
   });
   const data = await res.json();
-  console.log(data)
   if (!data.success) {
     throw new Error(data.message || 'Failed to fetch hotels');
   }

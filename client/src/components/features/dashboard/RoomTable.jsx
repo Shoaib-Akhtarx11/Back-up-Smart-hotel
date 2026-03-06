@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { updateRoom, addRoom } from '../../../redux/roomSlice';
+import { updateManagerRoom, deleteManagerRoom } from '../../../redux/managerSlice';
 
-const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
+const RoomTable = ({ rooms = [], allHotels = [], managerHotels = [], onDelete }) => {
     const dispatch = useDispatch();
     const [editingRoomId, setEditingRoomId] = useState(null);
     const [roomType, setRoomType] = useState('');
@@ -13,12 +13,32 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
     const [newRoomType, setNewRoomType] = useState('');
     const [newRoomPrice, setNewRoomPrice] = useState('');
 
+    // Use managerHotels if provided, otherwise fallback to allHotels
+    const hotels = managerHotels.length > 0 ? managerHotels : allHotels;
+
+    // Get hotel name from hotel object or ID
+    const getHotelName = (hotel) => {
+        if (!hotel) return 'N/A';
+        if (typeof hotel === 'string') {
+            const foundHotel = hotels.find(h => h._id === hotel || h.id === hotel);
+            return foundHotel?.Name || foundHotel?.name || 'Unknown Hotel';
+        }
+        return hotel.Name || hotel.name || 'Unknown Hotel';
+    };
+
+    // Get hotel ID from various formats
+    const getHotelId = (room) => {
+        if (room.HotelID?._id) return room.HotelID._id;
+        if (room.HotelID?.id) return room.HotelID.id;
+        return room.HotelID || room.hotelId || '';
+    };
+
     // Start editing a room
     const startEdit = (room) => {
-        setEditingRoomId(room.id);
-        setRoomType(room.type);
-        setRoomPrice(room.price.toString());
-        setIsAvailable(room.availability === true || room.availability === 'true');
+        setEditingRoomId(room._id);
+        setRoomType(room.Type || room.type || '');
+        setRoomPrice(room.Price?.toString() || room.price?.toString() || '');
+        setIsAvailable(room.Availability === true || room.Availability === 'true' || room.availability === true || room.availability === 'true');
     };
 
     // Cancel editing
@@ -29,7 +49,7 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
         setIsAvailable(true);
     };
 
-    // Save the room changes
+    // Save the room changes via API
     const saveEdit = (room) => {
         // Check if price is empty or 0
         const price = parseFloat(roomPrice);
@@ -40,157 +60,41 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
 
         // Create updated room object
         const updatedRoom = {
-            ...room,
-            type: roomType,
-            price: price,
-            availability: isAvailable
+            Type: roomType,
+            Price: price,
+            Availability: isAvailable
         };
 
-        // Save to Redux
-        dispatch(updateRoom(updatedRoom));
-
-        // Save to localStorage
-        const allRooms = JSON.parse(localStorage.getItem('allRooms') || '[]');
-        const index = allRooms.findIndex(r => r.id === room.id);
-        if (index >= 0) {
-            allRooms[index] = updatedRoom;
-        }
-        localStorage.setItem('allRooms', JSON.stringify(allRooms));
-
-        alert('Room updated successfully!');
-        setEditingRoomId(null);
+        // Call API to update room
+        dispatch(updateManagerRoom({ roomId: room._id, roomData: updatedRoom }))
+            .then(() => {
+                alert('Room updated successfully!');
+                setEditingRoomId(null);
+            })
+            .catch((err) => {
+                alert(err.message || 'Failed to update room');
+            });
     };
 
-    // Get hotel name from hotel ID
-    const getHotelName = (hotelId) => {
-        const hotel = allHotels.find(h => h.id === hotelId);
-        return hotel ? hotel.name : hotelId;
+    // Handle delete room
+    const handleDelete = (roomId) => {
+        if (onDelete) {
+            onDelete(roomId);
+        }
     };
 
-    // Add new room
-    const addNewRoom = () => {
-        // Validation
-        if (!newRoomHotelId) {
-            alert('Please select a hotel');
-            return;
-        }
-        if (!newRoomType.trim()) {
-            alert('Please enter room type');
-            return;
-        }
-        const price = parseFloat(newRoomPrice);
-        if (!newRoomPrice || price <= 0) {
-            alert('Please enter a valid price (must be greater than 0)');
-            return;
-        }
-
-        // Create new room ID
-        const newRoomId = `R-${newRoomHotelId}-${Math.random().toString(36).substr(2, 9)}`;
-
-        // Create new room object
-        const newRoom = {
-            id: newRoomId,
-            hotelId: newRoomHotelId,
-            type: newRoomType,
-            price: price,
-            availability: true,
-            image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500'
-        };
-
-        // Save to Redux
-    
-    dispatch(addRoom(newRoom));        // Save to localStorage
-        const allRooms = JSON.parse(localStorage.getItem('allRooms') || '[]');
-        allRooms.push(newRoom);
-        localStorage.setItem('allRooms', JSON.stringify(allRooms));
-
-        alert('Room added successfully!');
-        
-        // Reset form
-        setIsAddingRoom(false);
-        setNewRoomHotelId('');
-        setNewRoomType('');
-        setNewRoomPrice('');
-    };
-
-    const cancelAddRoom = () => {
-        setIsAddingRoom(false);
-        setNewRoomHotelId('');
-        setNewRoomType('');
-        setNewRoomPrice('');
+    // Render availability badge
+    const renderAvailability = (room) => {
+        const isRoomAvailable = room.Availability === true || room.Availability === 'true' || room.availability === true || room.availability === 'true';
+        return (
+            <span className={`badge ${isRoomAvailable ? 'bg-success' : 'bg-danger'}`}>
+                {isRoomAvailable ? 'Available' : 'Unavailable'}
+            </span>
+        );
     };
 
     return (
         <div>
-            {/* Add Room Button */}
-            {!isAddingRoom && (
-                <button
-                    className="btn btn-success mb-3"
-                    onClick={() => setIsAddingRoom(true)}
-                >
-                    + Add New Room
-                </button>
-            )}
-
-            {/* Add Room Form */}
-            {isAddingRoom && (
-                <div className="card border-2 border-success p-3 mb-3">
-                    <h5 className="fw-bold mb-3">Add New Room</h5>
-                    <div className="row mb-3">
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">Select Hotel</label>
-                            <select
-                                className="form-control"
-                                value={newRoomHotelId}
-                                onChange={(e) => setNewRoomHotelId(e.target.value)}
-                            >
-                                <option value="">-- Choose Your Hotel --</option>
-                                {managerHotels.map(hotel => (
-                                    <option key={hotel.id} value={hotel.id}>
-                                        {hotel.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">Room Type</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={newRoomType}
-                                onChange={(e) => setNewRoomType(e.target.value)}
-                                placeholder="e.g. Deluxe Room"
-                            />
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">Price (₹)</label>
-                            <input
-                                type="number"
-                                className="form-control"
-                                value={newRoomPrice}
-                                onChange={(e) => setNewRoomPrice(e.target.value)}
-                                placeholder="Enter price"
-                                min="1"
-                            />
-                        </div>
-                        <div className="col-md-3 d-flex align-items-end gap-2">
-                            <button
-                                className="btn btn-success flex-grow-1"
-                                onClick={addNewRoom}
-                            >
-                                Add Room
-                            </button>
-                            <button
-                                className="btn btn-secondary flex-grow-1"
-                                onClick={cancelAddRoom}
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Rooms Table */}
             <div className="table-responsive">
             <table className="table table-hover mb-0">
@@ -200,17 +104,18 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
                         <th>Room Type</th>
                         <th>Price (₹)</th>
                         <th>Status</th>
+                        <th>Bookings</th>
                         <th className="text-end pe-3">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {rooms.length > 0 ? (
                         rooms.map((room) => (
-                            <tr key={room.id}>
-                                {editingRoomId === room.id ? (
+                            <tr key={room._id}>
+                                {editingRoomId === room._id ? (
                                     // EDIT MODE
                                     <>
-                                        <td className="ps-3" colSpan="5">
+                                        <td className="ps-3" colSpan="6">
                                             <div className="card border-2 border-primary p-3">
                                                 <div className="row mb-3">
                                                     <div className="col-md-4">
@@ -267,25 +172,32 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
                                 ) : (
                                     // VIEW MODE
                                     <>
-                                        <td className="ps-3 fw-bold">{getHotelName(room.hotelId)}</td>
-                                        <td>{room.type}</td>
+                                        <td className="ps-3 fw-bold">{getHotelName(room.HotelID)}</td>
+                                        <td>{room.Type || room.type || 'N/A'}</td>
                                         <td>
                                             <span className="badge bg-info text-dark">
-                                                ₹{room.price.toLocaleString()}
+                                                ₹{(room.Price || room.price || 0).toLocaleString()}
                                             </span>
                                         </td>
-                                        <td>
-                                            <span className={`badge ${room.availability === true || room.availability === 'true' ? 'bg-success' : 'bg-danger'}`}>
-                                                {room.availability === true || room.availability === 'true' ? 'Available' : 'Unavailable'}
-                                            </span>
-                                        </td>
+                                        <td>{renderAvailability(room)}</td>
+                                        <td>{room.bookingCount || 0}</td>
                                         <td className="text-end pe-3">
-                                            <button
-                                                className="btn btn-sm btn-outline-primary"
-                                                onClick={() => startEdit(room)}
-                                            >
-                                                Edit
-                                            </button>
+                                            <div className="btn-group btn-group-sm" role="group">
+                                                <button
+                                                    className="btn btn-outline-primary"
+                                                    onClick={() => startEdit(room)}
+                                                    title="Edit"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-danger"
+                                                    onClick={() => handleDelete(room._id)}
+                                                    title="Delete"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </>
                                 )}
@@ -293,8 +205,8 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="5" className="text-center py-5 text-muted">
-                                No rooms available
+                            <td colSpan="6" className="text-center py-5 text-muted">
+                                No rooms available. Add a hotel first, then add rooms to it.
                             </td>
                         </tr>
                     )}
@@ -306,3 +218,4 @@ const RoomTable = ({ rooms, allHotels = [], managerHotels = [] }) => {
 };
 
 export default RoomTable;
+

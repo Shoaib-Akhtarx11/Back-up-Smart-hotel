@@ -1,5 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer,FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
+import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from './authSlice';
 import hotelReducer from './hotelSlice';
@@ -11,6 +11,7 @@ import reviewReducer from './reviewSlice';
 import redemptionReducer from './redemptionSlice';
 import loyaltyReducer from './loyaltySlice';
 import managerReducer from './managerSlice';
+import adminReducer from './adminSlice';
 
 const rootReducer = combineReducers({
   auth: authReducer,
@@ -23,12 +24,13 @@ const rootReducer = combineReducers({
   redemptions: redemptionReducer,
   loyalty: loyaltyReducer,
   manager: managerReducer,
+  admin: adminReducer,
 });
 
 const persistConfig = {
   key: 'smart-hotel-v2',
   storage,
-  whitelist: ['users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty', 'manager'] // Auth should NOT be persisted - validate with server on each load
+  whitelist: ['users', 'bookings', 'payment', 'redemptions', 'hotels', 'rooms', 'reviews', 'loyalty', 'manager']
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -39,15 +41,14 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-        // Ignore these paths that may contain non-serializable data
         ignoredActionPaths: ['payload'],
         ignoredPaths: [
           'bookings.allBookings',
           'payment.payments',
           'redemptions.allRedemptions'
         ]
-      },
-    }),
+      }
+    })
 });
 
 export const persistor = persistStore(store);

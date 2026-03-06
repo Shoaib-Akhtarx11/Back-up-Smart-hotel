@@ -1,303 +1,296 @@
 import React, { useState } from 'react';
-import { FaBed, FaDollarSign, FaImage, FaList } from 'react-icons/fa';
+import { useDispatch } from 'react-redux';
+import { FaTimes, FaHotel, FaMoneyBillWave, FaUserFriends, FaCheckCircle } from 'react-icons/fa';
+import { addManagerRoom } from '../../../redux/managerSlice';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5600/api';
+const AddRoomForm = ({ hotels = [], onClose, onSuccess }) => {
+    const dispatch = useDispatch();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        HotelID: '',
+        Type: '',
+        Price: '',
+        Capacity: 2,
+        Amenities: [],
+        Image: '',
+        Availability: true
+    });
+    const [errors, setErrors] = useState({});
 
-const AddRoomForm = ({ hotels, onSuccess, onCancel, editRoom }) => {
-  const [formData, setFormData] = useState({
-    Type: editRoom?.Type || 'Standard Room',
-    Price: editRoom?.Price || '',
-    HotelID: editRoom?.HotelID?._id || editRoom?.HotelID || (hotels[0]?._id || hotels[0]?.id) || '',
-    Availability: editRoom?.Availability !== undefined ? editRoom.Availability : true,
-    Features: editRoom?.Features || [],
-    Image: editRoom?.Image || '',
-    NumberOfRooms: editRoom?.NumberOfRooms || 1,
-  });
-  
-  const [amenityInput, setAmenityInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+    const roomTypes = ['Standard Room', 'Deluxe Room', 'Suite', 'Premium Room', 'Family Room', 'Double Room', 'Twin Room', 'Single Room'];
+    const amenityOptions = ['Free WiFi', 'Air Conditioning', 'TV', 'Mini Bar', 'Safe', 'Room Service', 'Balcony', 'Sea View', 'City View', 'King Bed', 'Twin Beds', 'Work Desk'];
 
-  const roomTypes = [
-    'Standard Room', 'Deluxe Room', 'Suite', 'Premium Suite', 'Executive Room',
-    'Family Room', 'Twin Room', 'Double Room', 'Single Room', 'Penthouse'
-  ];
-
-  const availableFeatures = [
-    'Free WiFi', 'TV', 'Air Conditioning', 'Heating', 'Breakfast included',
-    'Mini Bar', 'Coffee Maker', 'Safe', 'Workspace', 'Ocean View', 'City View',
-    'Garden View', 'Balcony', 'Bathtub', 'King Bed', 'Spa Access', 'Gym Access'
-  ];
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : 
-              name === 'Price' || name === 'NumberOfRooms' ? parseInt(value) || 0 : value
-    }));
-  };
-
-  const handleFeatureToggle = (feature) => {
-    setFormData(prev => ({
-      ...prev,
-      Features: prev.Features.includes(feature)
-        ? prev.Features.filter(f => f !== feature)
-        : [...prev.Features, feature]
-    }));
-  };
-
-  const handleAddCustomFeature = () => {
-    if (amenityInput.trim() && !formData.Features.includes(amenityInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        Features: [...prev.Features, amenityInput.trim()]
-      }));
-      setAmenityInput('');
-    }
-  };
-
-  const getAuthHeader = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: token ? `Bearer ${token}` : '',
-      },
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
     };
-  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+    const handleAmenityToggle = (amenity) => {
+        setFormData(prev => ({
+            ...prev,
+            Amenities: prev.Amenities.includes(amenity)
+                ? prev.Amenities.filter(a => a !== amenity)
+                : [...prev.Amenities, amenity]
+        }));
+    };
 
-    if (!formData.Type.trim()) {
-      setError('Room type is required');
-      return;
-    }
-    if (!formData.Price || formData.Price <= 0) {
-      setError('Please enter a valid price');
-      return;
-    }
-    if (!formData.HotelID) {
-      setError('Please select a hotel');
-      return;
-    }
+    const validateForm = () => {
+        const newErrors = {};
+        
+        if (!formData.HotelID) {
+            newErrors.HotelID = 'Please select a hotel';
+        }
+        if (!formData.Type.trim()) {
+            newErrors.Type = 'Room type is required';
+        }
+        if (!formData.Price || parseFloat(formData.Price) <= 0) {
+            newErrors.Price = 'Price must be greater than 0';
+        }
+        if (!formData.Capacity || parseInt(formData.Capacity) < 1) {
+            newErrors.Capacity = 'Capacity must be at least 1';
+        }
 
-    setLoading(true);
-    try {
-      const url = editRoom 
-        ? `${API_URL}/rooms/${editRoom._id || editRoom.id}`
-        : `${API_URL}/rooms`;
-      
-      const response = await fetch(url, {
-        method: editRoom ? 'PUT' : 'POST',
-        ...getAuthHeader(),
-        body: JSON.stringify({
-          HotelID: formData.HotelID,
-          Type: formData.Type,
-          Price: parseInt(formData.Price),
-          Availability: formData.Availability,
-          Features: formData.Features,
-          Image: formData.Image,
-          NumberOfRooms: parseInt(formData.NumberOfRooms) || 1,
-        }),
-      });
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
-      const data = await response.json();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!validateForm()) {
+            return;
+        }
 
-      if (data.success) {
-        if (onSuccess) onSuccess(data.data);
-        alert(editRoom ? 'Room updated successfully!' : 'Room added successfully!');
-      } else {
-        setError(data.message || 'Failed to save room');
-      }
-    } catch (err) {
-      console.error('Error saving room:', err);
-      setError(err.message || 'Failed to save room. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+        setLoading(true);
+        
+        try {
+            const roomData = {
+                HotelID: formData.HotelID,
+                Type: formData.Type,
+                Price: parseFloat(formData.Price),
+                Capacity: parseInt(formData.Capacity),
+                Amenities: formData.Amenities,
+                Image: formData.Image || 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=500',
+                Availability: formData.Availability
+            };
 
-  return (
-  <div className="card border-0 shadow-sm">
-    <div className="card-header bg-white py-3">
-      <h5 className="mb-0 fw-bold">
-        <FaBed className="me-2" />
-        {editRoom ? 'Edit Room' : 'Add New Room'}
-      </h5>
-    </div>
-    <div className="card-body">
-      {error && <div className="alert alert-danger">{error}</div>}
-      
-      <form onSubmit={handleSubmit}>
-        <div className="mb-3">
-          <label className="form-label fw-bold">
-            Select Hotel <span className="text-danger">*</span>
-          </label>
-          <select
-            className="form-select"
-            name="HotelID"
-            value={formData.HotelID}
-            onChange={handleChange}
-            required
-          >
-            <option value="">-- Select Hotel --</option>
-            {hotels.map(hotel => (
-              <option key={hotel._id || hotel.id} value={hotel._id || hotel.id}>
-                {hotel.Name} - {hotel.Location}
-              </option>
-            ))}
-          </select>
-        </div>
+            await dispatch(addManagerRoom(roomData)).unwrap();
+            alert('Room added successfully!');
+            if (onSuccess) {
+                onSuccess();
+            }
+        } catch (error) {
+            console.error('Error adding room:', error);
+            alert(error.message || 'Failed to add room. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        <div className="mb-3">
-          <label className="form-label fw-bold">
-            Room Type <span className="text-danger">*</span>
-          </label>
-          <select
-            className="form-select"
-            name="Type"
-            value={formData.Type}
-            onChange={handleChange}
-            required
-          >
-            {roomTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
+    return (
+        <div className="modal d-flex align-items-center justify-content-center" 
+             style={{ backgroundColor: 'rgba(0,0,0,0.5)', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1050 }}>
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+                <div className="modal-content border-0 shadow-lg rounded-4" style={{ maxHeight: '90vh', overflow: 'auto' }}>
+                    <div className="modal-header border-0 pb-0">
+                        <h4 className="modal-title fw-bold">Add New Room</h4>
+                        <button 
+                            type="button" 
+                            className="btn-close" 
+                            onClick={onClose}
+                            aria-label="Close"
+                        ></button>
+                    </div>
+                    
+                    <div className="modal-body">
+                        {hotels.length === 0 ? (
+                            <div className="alert alert-warning">
+                                <strong>No hotels found!</strong> Please add a hotel first before adding rooms.
+                                <div className="mt-2">
+                                    <button 
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => { onClose(); window.location.href = '/add-hotel'; }}
+                                    >
+                                        Add Hotel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleSubmit}>
+                                {/* Hotel Selection */}
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">
+                                        <FaHotel className="me-2" />Select Hotel *
+                                    </label>
+                                    <select
+                                        name="HotelID"
+                                        value={formData.HotelID}
+                                        onChange={handleInputChange}
+                                        className={`form-control ${errors.HotelID ? 'is-invalid' : ''}`}
+                                    >
+                                        <option value="">-- Choose Your Hotel --</option>
+                                        {hotels.map(hotel => (
+                                            <option key={hotel._id} value={hotel._id}>
+                                                {hotel.Name} - {hotel.Location}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.HotelID && <div className="invalid-feedback">{errors.HotelID}</div>}
+                                </div>
 
-        <div className="mb-3">
-          <label className="form-label fw-bold">
-            Price per Night (₹) <span className="text-danger">*</span>
-          </label>
-          <div className="input-group">
-            <span className="input-group-text"><FaDollarSign /></span>
-            <input
-              type="number"
-              className="form-control"
-              name="Price"
-              value={formData.Price}
-              onChange={handleChange}
-              placeholder="Enter price"
-              min="0"
-              required
-            />
-          </div>
-        </div>
+                                {/* Room Type */}
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Room Type *</label>
+                                    <select
+                                        name="Type"
+                                        value={formData.Type}
+                                        onChange={handleInputChange}
+                                        className={`form-control ${errors.Type ? 'is-invalid' : ''}`}
+                                    >
+                                        <option value="">-- Select Room Type --</option>
+                                        {roomTypes.map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                    {errors.Type && <div className="invalid-feedback">{errors.Type}</div>}
+                                </div>
 
-        <div className="mb-3">
-          <label className="form-label fw-bold">Number of Rooms</label>
-          <input
-            type="number"
-            className="form-control"
-            name="NumberOfRooms"
-            value={formData.NumberOfRooms}
-            onChange={handleChange}
-            min="1"
-          />
-        </div>
+                                {/* Price and Capacity */}
+                                <div className="row mb-3">
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold">
+                                            <FaMoneyBillWave className="me-2" />Price (₹) *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="Price"
+                                            value={formData.Price}
+                                            onChange={handleInputChange}
+                                            className={`form-control ${errors.Price ? 'is-invalid' : ''}`}
+                                            placeholder="Enter price per night"
+                                            min="1"
+                                        />
+                                        {errors.Price && <div className="invalid-feedback">{errors.Price}</div>}
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-bold">
+                                            <FaUserFriends className="me-2" />Capacity *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="Capacity"
+                                            value={formData.Capacity}
+                                            onChange={handleInputChange}
+                                            className={`form-control ${errors.Capacity ? 'is-invalid' : ''}`}
+                                            placeholder="Number of guests"
+                                            min="1"
+                                            max="10"
+                                        />
+                                        {errors.Capacity && <div className="invalid-feedback">{errors.Capacity}</div>}
+                                    </div>
+                                </div>
 
-        <div className="mb-3">
-          <div className="form-check">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              name="Availability"
-              id="Availability"
-              checked={formData.Availability}
-              onChange={handleChange}
-            />
-            <label className="form-check-label" htmlFor="Availability">
-              Room Available for Booking
-            </label>
-          </div>
-        </div>
+                                {/* Room Image URL */}
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Room Image URL</label>
+                                    <input
+                                        type="url"
+                                        name="Image"
+                                        value={formData.Image}
+                                        onChange={handleInputChange}
+                                        className="form-control"
+                                        placeholder="https://example.com/room-image.jpg"
+                                    />
+                                    {formData.Image && (
+                                        <div className="mt-2">
+                                            <img 
+                                                src={formData.Image} 
+                                                alt="Room Preview" 
+                                                className="img-thumbnail"
+                                                style={{ maxWidth: '200px', maxHeight: '150px' }}
+                                                onError={(e) => { e.target.style.display = 'none'; }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
 
-        <div className="mb-3">
-          <label className="form-label fw-bold">Room Image URL</label>
-          <div className="input-group">
-            <span className="input-group-text"><FaImage /></span>
-            <input
-              type="url"
-              className="form-control"
-              name="Image"
-              value={formData.Image}
-              onChange={handleChange}
-              placeholder="https://example.com/room-image.jpg"
-            />
-          </div>
-        </div>
+                                {/* Availability */}
+                                <div className="mb-3">
+                                    <div className="form-check">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            id="Availability"
+                                            checked={formData.Availability}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, Availability: e.target.checked }))}
+                                        />
+                                        <label className="form-check-label" htmlFor="Availability">
+                                            <FaCheckCircle className="me-1" /> Room is available for booking
+                                        </label>
+                                    </div>
+                                </div>
 
-        <div className="mb-3">
-          <label className="form-label fw-bold">
-            <FaList className="me-1" /> Room Features
-          </label>
-          <div className="d-flex flex-wrap gap-2 mb-2">
-            {availableFeatures.map(feature => (
-              <button
-                key={feature}
-                type="button"
-                className={`btn btn-sm ${formData.Features.includes(feature) ? 'btn-primary' : 'btn-outline-secondary'}`}
-                onClick={() => handleFeatureToggle(feature)}
-              >
-                {feature}
-              </button>
-            ))}
-          </div>
-          <div className="d-flex gap-2">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Enter custom feature"
-              value={amenityInput}
-              onChange={(e) => setAmenityInput(e.target.value)}
-            />
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleAddCustomFeature}
-            >
-              Add
-            </button>
-          </div>
-          {formData.Features.length > 0 && (
-            <div className="mt-2 d-flex flex-wrap gap-2">
-              {formData.Features.map(feature => (
-                <span key={feature} className="badge bg-primary">
-                  {feature}
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white ms-2"
-                    style={{ fontSize: '0.5rem' }}
-                    onClick={() => handleFeatureToggle(feature)}
-                  />
-                </span>
-              ))}
+                                {/* Amenities */}
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Amenities</label>
+                                    <div className="row g-2">
+                                        {amenityOptions.map(amenity => (
+                                            <div key={amenity} className="col-md-4 col-6">
+                                                <div className="form-check">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        id={`amenity-${amenity}`}
+                                                        checked={formData.Amenities.includes(amenity)}
+                                                        onChange={() => handleAmenityToggle(amenity)}
+                                                    />
+                                                    <label className="form-check-label small" htmlFor={`amenity-${amenity}`}>
+                                                        {amenity}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Submit Buttons */}
+                                <div className="d-flex gap-2 justify-content-end mt-4">
+                                    <button 
+                                        type="button" 
+                                        className="btn btn-outline-secondary"
+                                        onClick={onClose}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        className="btn btn-primary"
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Adding...
+                                            </>
+                                        ) : (
+                                            'Add Room'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
             </div>
-          )}
         </div>
-
-        <div className="d-flex gap-2 justify-content-end mt-4">
-          {onCancel && (
-            <button
-              type="button"
-              className="btn btn-outline-secondary"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-          )}
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Saving...' : editRoom ? 'Update Room' : 'Add Room'}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-);
+    );
 };
 
 export default AddRoomForm;
+

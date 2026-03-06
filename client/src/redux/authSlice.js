@@ -19,18 +19,39 @@ export const checkAuth = createAsyncThunk(
       
       if (res.ok && data.success) {
         return data.data;
-      } else {
-        // If not authenticated, return null
+      } else if (res.status === 401) {
+        // Not authenticated - return null specifically, not an error
         return null;
+      } else {
+        // Other errors (500, etc.) - reject with error
+        return rejectWithValue(data.message || 'Authentication check failed');
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.message || 'Network error during authentication');
     }
   }
 );
 
-// Get user from session storage
+// Async thunk for logout - properly handles the logout process
+export const logout = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include"
+      });
+      return true;
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Even if the server call fails, we should clear the client state
+      return true; 
+    }
+  }
+);
+
+// Get user from session storage (NOT localStorage)
 const getStoredUser = () => {
   try {
     const user = sessionStorage.getItem("user");
@@ -42,7 +63,7 @@ const getStoredUser = () => {
 
 const initialState = {
   user: getStoredUser(),
-  token: null, // Token is stored in HTTP-only cookie
+  token: null, // Token is stored in HTTP-only cookie only
   isAuthenticated: !!sessionStorage.getItem("user"),
   loading: true, // Start with loading true to allow auth check
   error: null,
@@ -63,20 +84,9 @@ const authSlice = createSlice({
       sessionStorage.setItem("user", JSON.stringify(user));
     },
 
-    logout: (state) => {
-      state.user = null;
-      state.token = null;
-      state.isAuthenticated = false;
+    // Clear error state
+    clearError: (state) => {
       state.error = null;
-      state.loading = false;
-      // Clear session storage
-      sessionStorage.removeItem("user");
-      
-      // Call logout endpoint to clear cookie
-      fetch(`${API_BASE}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include"
-      }).catch(err => console.error("Logout error:", err));
     },
 
     updateUser: (state, action) => {
@@ -90,16 +100,20 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Check Auth
       .addCase(checkAuth.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.loading = false;
         if (action.payload) {
           state.user = action.payload;
           state.isAuthenticated = true;
+          state.error = null;
           sessionStorage.setItem("user", JSON.stringify(action.payload));
         } else {
+          // User is not authenticated (null returned)
           state.user = null;
           state.isAuthenticated = false;
           sessionStorage.removeItem("user");
@@ -109,11 +123,33 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
+        state.error = action.payload || 'Authentication failed';
+        sessionStorage.removeItem("user");
+      })
+      
+      // Logout
+      .addCase(logout.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.error = null;
+        state.loading = false;
+        sessionStorage.removeItem("user");
+      })
+      .addCase(logout.rejected, (state) => {
+        // Even on failure, clear the client state
+        state.user = null;
+        state.token = null;
+        state.isAuthenticated = false;
+        state.loading = false;
         sessionStorage.removeItem("user");
       });
   }
 });
 
-export const { login, logout, updateUser, setLoading } = authSlice.actions;
+export const { login, clearError, updateUser, setLoading } = authSlice.actions;
 export default authSlice.reducer;
 

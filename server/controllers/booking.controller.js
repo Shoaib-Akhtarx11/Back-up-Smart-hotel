@@ -215,6 +215,8 @@ export const updateBookingStatus = async (req, res) => {
     const { Status } = req.body;
     const { id } = req.params;
 
+    console.log('[Booking Status Update] Request received, booking ID:', id, 'Status:', Status, 'User:', req.user);
+
     if (!Status) {
       return res.status(400).json({ success: false, message: 'Status is required' });
     }
@@ -238,12 +240,28 @@ export const updateBookingStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Booking not found' });
     }
 
+    console.log('[Booking Status Update] Booking found, Room:', booking.RoomID);
+
     // Check if user is a manager for this hotel
     if (req.user.role === 'manager') {
       const hotelId = booking.RoomID?.HotelID?._id || booking.RoomID?.HotelID;
-      const hotel = await import('../models/hotel.model.js').then(m => m.default.findById(hotelId));
+      
+      if (!hotelId) {
+        console.log('[Booking Status Update] No hotel found for this booking');
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Unable to find hotel for this booking' 
+        });
+      }
+
+      // Import Hotel model dynamically
+      const Hotel = (await import('../models/hotel.model.js')).default;
+      const hotel = await Hotel.findById(hotelId);
+      
+      console.log('[Booking Status Update] Hotel ManagerID:', hotel?.ManagerID, 'User ID:', req.user.id);
       
       if (!hotel || hotel.ManagerID?.toString() !== req.user.id) {
+        console.log('[Booking Status Update] Manager authorization failed');
         return res.status(403).json({ 
           success: false, 
           message: 'Not authorized to update bookings for this hotel' 
@@ -266,6 +284,7 @@ export const updateBookingStatus = async (req, res) => {
       await room.save();
     }
 
+    console.log('[Booking Status Update] Booking status updated successfully');
     return res.status(200).json({ 
       success: true, 
       data: booking,

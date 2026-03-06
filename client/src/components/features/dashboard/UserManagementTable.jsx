@@ -1,121 +1,138 @@
 import React from "react";
-import { useDispatch } from "react-redux";
-import { FaTrash, FaEdit } from "react-icons/fa";
+import { FaTrash, FaEdit, FaUserShield } from "react-icons/fa";
 
-const UserManagementTable = ({ users, type }) => {
-  const dispatch = useDispatch();
+const UserManagementTable = ({ users, type, onDelete, onRoleChange }) => {
+  // Helper to safely get user data
+  const getId = (user) => user._id || user.id || user.UserID || '';
+  const getName = (user) => user.Name || user.name || '';
+  const getEmail = (user) => user.Email || user.email || '';
+  const getRole = (user) => user.Role || user.role || 'guest';
 
-  // Helper to safely get user data with case-insensitive field names
-  const getField = (user, field) => {
-    const lowerField = field.toLowerCase();
-    // Try lowercase first
-    if (user[lowerField] !== undefined) return user[lowerField];
-    // Try PascalCase
-    if (user[field] !== undefined) return user[field];
-    return '';
-  };
-
-  const getId = (user) => getField(user, 'id') || user._id || user.UserID || '';
-  const getName = (user) => getField(user, 'name') || user.Name || '';
-  const getEmail = (user) => getField(user, 'email') || user.Email || '';
-
-  const handleEdit = (user) => {
-    alert(`Edit feature for ${getName(user)} - Updates will be shown as alert messages`);
-  };
-
-  const handleDelete = (user) => {
-    const name = getName(user);
-    const id = getId(user);
-    const confirmDelete = window.confirm(
-      `Are you sure you want to remove ${name} from the database? This action is permanent.`
-    );
-    
-    if (confirmDelete) {
-      try {
-        // TODO: Implement user deletion via backend API
-        // dispatch(deleteUser(id));
-        alert(`${name} has been removed from the system`);
-      } catch (error) {
-        console.error("Failed to delete user:", error);
-        alert("An error occurred while trying to remove the user.");
-      }
+  const handleRoleChange = (userId, newRole) => {
+    if (window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) {
+      onRoleChange(userId, newRole);
     }
   };
 
   return (
     <div className="table-responsive">
       <table className="table table-hover align-middle border-0">
-          <thead className="table-light">
-            <tr className="text-secondary small text-uppercase">
-              <th className="py-3 px-4">ID</th>
-              <th className="py-3">Name</th>
-              <th className="py-3">Email</th>
-              <th className="py-3">{type === "manager" ? "Role" : "Loyalty Points"}</th>
-              <th className="py-3">Status</th>
-              <th className="py-3 text-end px-4">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.length > 0 ? (
-              users.map((user) => (
-                <tr key={getId(user)} className="border-bottom">
-                  <td className="px-4 fw-bold text-muted">#{getId(user)}</td>
-                  <td>
-                    <div className="fw-bold">{getName(user)}</div>
-                    <div className="small text-muted d-md-none">{getEmail(user)}</div>
-                  </td>
-                  <td className="text-muted d-none d-md-table-cell">{getEmail(user)}</td>
-                  <td>
-                    {type === "manager" ? (
-                      <span className="badge bg-info-subtle text-info border border-info-subtle px-3 rounded-pill">
-                        Manager
-                      </span>
-                    ) : (
-                      <span className="fw-bold text-primary bg-primary-subtle px-3 py-1 rounded-pill small">
-                        {/* Safety: Matching your PointsBalance PascalCase */}
-                        {(user.loyalty?.PointsBalance ?? 0).toLocaleString()} pts
-                      </span>
-                    )}
-                  </td>
-                  <td>
-                    <span className="badge bg-success-subtle text-success border border-success-subtle px-2">
-                      Active
+        <thead className="table-light">
+          <tr className="text-secondary small text-uppercase">
+            <th className="py-3 px-4">ID</th>
+            <th className="py-3">Name</th>
+            <th className="py-3">Email</th>
+            <th className="py-3">Role</th>
+            <th className="py-3">Bookings</th>
+            <th className="py-3">Joined</th>
+            <th className="py-3 text-end px-4">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.length > 0 ? (
+            users.map((user) => (
+              <tr key={getId(user)} className="border-bottom">
+                <td className="px-4 fw-bold text-muted">#{getId(user).slice(-6)}</td>
+                <td>
+                  <div className="fw-bold">{getName(user)}</div>
+                  <div className="small text-muted d-md-none">{getEmail(user)}</div>
+                </td>
+                <td className="text-muted d-none d-md-table-cell">{getEmail(user)}</td>
+                <td>
+                  {type === "admin" ? (
+                    <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-3 rounded-pill">
+                      <FaUserShield className="me-1" />
+                      Admin
                     </span>
-                  </td>
-                  <td className="px-4">
-                    <div className="d-flex gap-2 justify-content-end">
-                      <button 
-                        className="btn btn-sm btn-light border" 
-                        title="Edit User"
-                        onClick={() => handleEdit(user)}
-                      >
-                        <FaEdit className="text-primary" />
-                      </button>
-                      <button 
-                        className="btn btn-sm btn-light border" 
+                  ) : type === "manager" ? (
+                    <span className="badge bg-warning-subtle text-warning border border-warning-subtle px-3 rounded-pill">
+                      Manager
+                    </span>
+                  ) : (
+                    <span className="badge bg-info-subtle text-info border border-info-subtle px-3 rounded-pill">
+                      Guest
+                    </span>
+                  )}
+                </td>
+                <td>
+                  <span className="badge bg-primary-subtle text-primary px-3 py-1 rounded-pill">
+                    {user.bookingCount || 0}
+                  </span>
+                </td>
+                <td className="text-muted small">
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                </td>
+                <td className="px-4">
+                  <div className="d-flex gap-2 justify-content-end">
+                    {/* Role Change Dropdown */}
+                    {type !== "admin" && (
+                      <div className="dropdown">
+                        <button
+                          className="btn btn-sm btn-light border dropdown-toggle"
+                          type="button"
+                          data-bs-toggle="dropdown"
+                          aria-expanded="false"
+                          title="Change Role"
+                        >
+                          <FaEdit className="text-primary" />
+                        </button>
+                        <ul className="dropdown-menu">
+                          <li>
+                            <button
+                              className="dropdown-item"
+                              onClick={() => handleRoleChange(getId(user), 'guest')}
+                            >
+                              Set as Guest
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              className="dropdown-item"
+                              onClick={() => handleRoleChange(getId(user), 'manager')}
+                            >
+                              Set as Manager
+                            </button>
+                          </li>
+                          <li>
+                            <button
+                              className="dropdown-item"
+                              onClick={() => handleRoleChange(getId(user), 'admin')}
+                            >
+                              Set as Admin
+                            </button>
+                          </li>
+                        </ul>
+                      </div>
+                    )}
+                    {/* Delete Button */}
+                    {type !== "admin" && (
+                      <button
+                        className="btn btn-sm btn-light border"
                         title="Delete User"
-                        onClick={() => handleDelete(user)}
+                        onClick={() => onDelete(getId(user))}
                       >
                         <FaTrash className="text-danger" />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" className="text-center py-5">
-                  <div className="text-muted">
-                    <i className="bi bi-person-x display-4 d-block mb-2"></i>
-                    No {type}s found in the database.
+                    )}
                   </div>
                 </td>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    );
+            ))
+          ) : (
+            <tr>
+              <td colSpan="7" className="text-center py-5">
+                <div className="text-muted">
+                  <i className="bi bi-person-x display-4 d-block mb-2"></i>
+                  No {type}s found in the database.
+                </div>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 export default UserManagementTable;
+

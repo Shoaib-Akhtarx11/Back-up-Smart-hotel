@@ -15,6 +15,7 @@ import reviewRouter from "./routes/review.routes.js";
 import loyaltyRouter from "./routes/loyalty.routes.js";
 import redemptionRouter from "./routes/redemption.routes.js";
 import managerRouter from "./routes/manager.routes.js";
+import adminRouter from "./routes/admin.routes.js";
 
 // Load global .env from project root
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +23,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3600;
+const PORT = process.env.PORT || 5600;
 
 // Connect Database 
 connectDB();
@@ -83,7 +84,10 @@ app.use("/api/loyalty", loyaltyRouter);
 app.use("/api/redemptions", redemptionRouter);
 
 // Mount manager endpoints
-app.use("/api/managers", managerRouter);
+app.use("/api/manager", managerRouter);
+
+// Mount admin endpoints
+app.use("/api/admin", adminRouter);
 
 // Global error handler
 app.use((err, req, res, next) => {

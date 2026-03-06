@@ -1,70 +1,52 @@
 import express from 'express';
-import { protect, authorize } from '../middleware/auth.middleware.js';
 import {
-  createManagerProfile,
-  getManagerByUserId,
-  getManagerByHotelId,
-  getAllManagers,
-  getCurrentManager,
-  getManagerDashboardData,
-  updateManagerProfile,
-  assignHotelToManager,
-  deleteManagerProfile
+  getManagerDashboardStats,
+  getManagerHotels,
+  createManagerHotel,
+  updateManagerHotel,
+  deleteManagerHotel,
+  getManagerRooms,
+  createManagerRoom,
+  updateManagerRoom,
+  deleteManagerRoom,
+  getManagerBookings,
+  updateManagerBookingStatus,
+  getManagerReviews,
+  deleteManagerReview,
+  getManagerProfile
 } from '../controllers/manager.controller.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 
-// Public routes
-// None for managers
+// All routes require authentication and manager role
+router.use(protect, authorize('manager'));
 
-// Protected routes
-// All routes require authentication
-router.use(protect);
+// Dashboard
+router.get('/stats', getManagerDashboardStats);
 
-// @route   GET /api/managers/dashboard-data
-// @desc    Get all dashboard data for manager (hotels, rooms, bookings, reviews, statistics)
-// @access  Private (manager)
-router.get('/dashboard-data', authorize('manager', 'admin'), getManagerDashboardData);
+// Profile
+router.get('/profile', getManagerProfile);
 
-// @route   GET /api/managers/me
-// @desc    Get current manager profile
-// @access  Private (manager)
-router.get('/me', authorize('manager'), getCurrentManager);
+// Hotels management
+router.get('/hotels', getManagerHotels);
+router.post('/hotels', createManagerHotel);
+router.put('/hotels/:id', updateManagerHotel);
+router.delete('/hotels/:id', deleteManagerHotel);
 
-// @route   POST /api/managers
-// @desc    Create manager profile
-// @access  Private (manager)
-router.post('/', authorize('manager'), createManagerProfile);
+// Rooms management
+router.get('/rooms', getManagerRooms);
+router.post('/rooms', createManagerRoom);
+router.put('/rooms/:id', updateManagerRoom);
+router.delete('/rooms/:id', deleteManagerRoom);
 
-// @route   GET /api/managers
-// @desc    Get all managers
-// @access  Private (admin)
-router.get('/', authorize('admin'), getAllManagers);
+// Bookings management
+router.get('/bookings', getManagerBookings);
+router.put('/bookings/:id/status', updateManagerBookingStatus);
 
-// @route   GET /api/managers/user/:userId
-// @desc    Get manager by user ID
-// @access  Private
-router.get('/user/:userId', getManagerByUserId);
-
-// @route   GET /api/managers/hotel/:hotelId
-// @desc    Get manager by hotel ID
-// @access  Private
-router.get('/hotel/:hotelId', getManagerByHotelId);
-
-// @route   PUT /api/managers/:id
-// @desc    Update manager profile
-// @access  Private (manager)
-router.put('/:id', authorize('manager'), updateManagerProfile);
-
-// @route   PUT /api/managers/assign-hotel
-// @desc    Assign hotel to manager
-// @access  Private (admin)
-router.put('/assign-hotel', authorize('admin'), assignHotelToManager);
-
-// @route   DELETE /api/managers/:id
-// @desc    Delete manager profile
-// @access  Private (admin)
-router.delete('/:id', authorize('admin'), deleteManagerProfile);
+// Reviews management
+router.get('/reviews', getManagerReviews);
+router.delete('/reviews/:id', deleteManagerReview);
 
 export default router;
 
